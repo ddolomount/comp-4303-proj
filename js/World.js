@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import * as Setup from './setup.js';
-import { Arena } from './game/Arena.js';
-import { Hud } from './game/Hud.js';
-import { InputController } from './game/InputController.js';
-import { Enemy } from './game/entities/Enemy.js';
-import { Pickup } from './game/entities/Pickup.js';
-import { Player } from './game/entities/Player.js';
-import { Projectile } from './game/entities/Projectile.js';
+import { TileMap } from './maps/TileMap.js';
+import { Hud } from './ui/Hud.js';
+import { InputHandler } from './input/InputHandler.js';
+import { EnemyEntity } from './entities/EnemyEntity.js';
+import { PickupEntity } from './entities/PickupEntity.js';
+import { PlayerEntity } from './entities/PlayerEntity.js';
+import { ProjectileEntity } from './entities/ProjectileEntity.js';
 
 const CAMERA_OFFSET = new THREE.Vector3(0, 34, 10);
 
@@ -20,7 +20,7 @@ export class World {
     this.clock = new THREE.Clock();
 
     this.hud = new Hud();
-    this.input = new InputController(this.renderer.domElement);
+    this.input = new InputHandler(this.camera, this.renderer.domElement);
 
     this.projectiles = [];
     this.enemies = [];
@@ -35,25 +35,19 @@ export class World {
     this.spawnAccumulator = 0;
   }
 
+  // Initialize objects and HUD in our world
   init() {
     Setup.createLights(this.scene);
 
-    this.arena = new Arena(this.scene);
-    this.player = new Player(this.scene);
-    this.player.setPosition(this.arena.center.x, this.arena.center.z);
+    this.map = new TileMap(this.scene, { rows: 31, cols: 31, tileSize: 3 });
+    this.player = new PlayerEntity(this.scene);
+    this.player.setPosition(this.map.center.x, this.map.center.z);
 
     this.hud.setMessage('Enter the arena');
     this.startWave();
-
-    window.addEventListener('resize', () => this.handleResize());
   }
 
-  handleResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-  }
-
+  // Restart game upon loss
   restart() {
     for (const projectile of this.projectiles) {
       projectile.dispose(this.scene);
@@ -77,28 +71,30 @@ export class World {
     this.gameOver = false;
     this.arenaRegenerated = false;
 
-    this.arena.generate();
     this.player.reset();
-    this.player.setPosition(this.arena.center.x, this.arena.center.z);
+    this.player.setPosition(this.map.center.x, this.map.center.z);
     this.hud.setMessage('System rebooted');
     this.startWave();
   }
 
+  // Start new wave after previous restart or previous wave completed
   startWave() {
     this.wave += 1;
     this.pendingWaveTimer = 0;
     this.arenaRegenerated = false;
 
     this.clearTransientObjects();
-    this.arena.generate();
-    this.player.setPosition(this.arena.center.x, this.arena.center.z);
+
+    this.map.generate();
+
+    this.player.setPosition(this.map.center.x, this.map.center.z);
     this.player.syncVisuals();
 
     const enemyCount = 4 + this.wave * 2;
     for (let i = 0; i < enemyCount; i += 1) {
       const variant = Math.random() < Math.min(0.25 + this.wave * 0.06, 0.55) ? 'ranged' : 'melee';
-      const spawn = this.arena.getEdgeSpawnPoint(this.player.position, 16);
-      const enemy = new Enemy(this.scene, this, variant, this.wave);
+      const spawn = this.map.getEdgeSpawnPoint(this.player.position, 16);
+      const enemy = new EnemyEntity(this.scene, this, variant, this.wave);
       enemy.setPosition(spawn.x, spawn.z);
       this.enemies.push(enemy);
     }
@@ -125,20 +121,22 @@ export class World {
     this.pickups = [];
   }
 
+  // Spawn health packs and score multipliers
   spawnWavePickups() {
-    const healthSpot = this.arena.getRandomOpenPoint(this.player.position, 10);
-    const multiplierSpot = this.arena.getRandomOpenPoint(this.player.position, 12);
+    const healthSpot = this.map.getRandomOpenPoint(this.player.position, 10);
+    const multiplierSpot = this.map.getRandomOpenPoint(this.player.position, 12);
 
-    this.pickups.push(new Pickup(this.scene, 'health', healthSpot));
-    this.pickups.push(new Pickup(this.scene, 'multiplier', multiplierSpot));
+    this.pickups.push(new PickupEntity(this.scene, 'health', healthSpot));
+    this.pickups.push(new PickupEntity(this.scene, 'multiplier', multiplierSpot));
   }
 
   addProjectile(config) {
-    const projectile = new Projectile(this.scene, config);
+    const projectile = new ProjectileEntity(this.scene, config);
     this.projectiles.push(projectile);
     return projectile;
   }
 
+  // Update our world
   update() {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     this.input.updatePointerWorld(this.camera);
@@ -183,7 +181,7 @@ export class World {
     this.pendingWaveTimer += dt;
 
     if (!this.arenaRegenerated && this.pendingWaveTimer > 1.2) {
-      this.hud.setMessage('Arena rerouting');
+      this.hud.setMessage('Map rerouting');
       this.arenaRegenerated = true;
     }
 
@@ -194,7 +192,7 @@ export class World {
 
   updateCamera(dt) {
     const desired = this.player.position.clone().add(CAMERA_OFFSET);
-    this.camera.position.lerp(desired, Math.min(1, dt * 4));
+    this.camera.position.copy(desired);
     this.camera.lookAt(this.player.position.x, 0, this.player.position.z);
   }
 
@@ -204,7 +202,7 @@ export class World {
         continue;
       }
 
-      if (this.arena.collidesCircle(projectile.position.x, projectile.position.z, projectile.radius)) {
+      if (this.map.collidesCircle(projectile.position.x, projectile.position.z, projectile.radius)) {
         projectile.alive = false;
         continue;
       }
@@ -223,7 +221,7 @@ export class World {
               this.score += enemy.scoreValue * this.player.getScoreMultiplier();
               if (Math.random() < 0.16) {
                 const pickupKind = Math.random() < 0.6 ? 'health' : 'multiplier';
-                this.pickups.push(new Pickup(this.scene, pickupKind, enemy.position));
+                this.pickups.push(new PickupEntity(this.scene, pickupKind, enemy.position));
               }
             }
 

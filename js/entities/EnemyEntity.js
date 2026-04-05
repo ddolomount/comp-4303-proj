@@ -1,12 +1,15 @@
 import * as THREE from 'three';
-import { AttackState, ChaseState, PatrolState } from '../../ai/decisions/EnemyStates.js';
-import { StateMachine } from '../../ai/decisions/StateMachine.js';
+import { DynamicEntity } from './DynamicEntity.js';
+import { StateMachine } from '../ai/decisions/StateMachine.js';
+import { PatrolState } from '../ai/decisions/EnemyStates/PatrolState.js';
+import { ChaseState } from '../ai/decisions/EnemyStates/ChaseState.js';
+import { AttackState } from '../ai/decisions/EnemyStates/AttackState.js';
 
 const VARIANT_CONFIG = {
   melee: {
     color: '#ff8778',
     emissive: '#ff6657',
-    speed: 7.3,
+    speed: 15,
     health: 52,
     detectionRange: 18,
     attackRange: 1.45,
@@ -17,7 +20,7 @@ const VARIANT_CONFIG = {
   ranged: {
     color: '#7ca9ff',
     emissive: '#70a0ff',
-    speed: 5.8,
+    speed: 8,
     health: 38,
     detectionRange: 24,
     attackRange: 12,
@@ -27,44 +30,25 @@ const VARIANT_CONFIG = {
   },
 };
 
-export class Enemy {
+export class EnemyEntity extends DynamicEntity {
   constructor(scene, world, variant, wave) {
-    this.scene = scene;
-    this.world = world;
-    this.variant = variant;
-    this.config = VARIANT_CONFIG[variant];
-    this.radius = 0.72;
-    this.height = 1.3;
-    this.position = new THREE.Vector3();
-    this.velocity = new THREE.Vector3();
-    this.desiredVelocity = new THREE.Vector3();
-    this.forward = new THREE.Vector3(0, 0, 1);
-    this.alive = true;
-    this.alerted = false;
-    this.wanderTarget = null;
-    this.cooldown = 0;
-    this.lostSightTimer = 0;
+    const config = VARIANT_CONFIG[variant];
+    const group = new THREE.Group();
 
-    this.maxHealth = this.config.health + Math.max(0, wave - 1) * 7;
-    this.health = this.maxHealth;
-    this.scoreValue = this.config.scoreValue + (wave - 1) * 10;
-    this.attackRange = this.config.attackRange;
-
-    this.group = new THREE.Group();
     const body = new THREE.Mesh(
       new THREE.CapsuleGeometry(0.58, 0.9, 8, 16),
       new THREE.MeshStandardMaterial({
-        color: this.config.color,
-        emissive: this.config.emissive,
+        color: config.color,
+        emissive: config.emissive,
         emissiveIntensity: 0.4,
         metalness: 0.18,
         roughness: 0.36,
       })
     );
     body.castShadow = true;
-    this.group.add(body);
+    group.add(body);
 
-    this.sensor = new THREE.Mesh(
+    const sensor = new THREE.Mesh(
       new THREE.BoxGeometry(0.24, 0.24, 0.9),
       new THREE.MeshStandardMaterial({
         color: '#061817',
@@ -72,13 +56,41 @@ export class Enemy {
         emissiveIntensity: 0.18,
       })
     );
-    this.sensor.position.set(0, 0.2, 0.85);
-    this.group.add(this.sensor);
+    sensor.position.set(0, 0.2, 0.85);
+    group.add(sensor);
 
-    this.scene.add(this.group);
+    super({
+      position: new THREE.Vector3(),
+      scale: new THREE.Vector3(1.2, 1.3, 1.2),
+      mesh: group,
+      topSpeed: config.speed,
+      friction: 0.97,
+      mass: 1,
+      maxForce: 42,
+    });
 
+    this.scene = scene;
+    this.world = world;
+    this.variant = variant;
+    this.config = config;
+    this.wave = wave;
+    this.radius = 0.72;
+    this.height = 1.3;
+    this.forward = new THREE.Vector3(0, 0, 1);
+    this.alive = true;
+    this.alerted = false;
+    this.wanderTarget = null;
+    this.cooldown = 0;
+    this.lostSightTimer = 0;
+    this.attackRange = config.attackRange;
+    this.maxHealth = config.health + Math.max(0, wave - 1) * 7;
+    this.health = this.maxHealth;
+    this.scoreValue = config.scoreValue + (wave - 1) * 10;
+    this.meleeEngageRange = this.attackRange + 0.85;
     this.stateMachine = new StateMachine(this, new PatrolState());
     this.stateMachine.state.enter(this);
+
+    this.scene.add(this.mesh);
     this.syncVisuals();
   }
 
@@ -95,26 +107,35 @@ export class Enemy {
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.stateMachine.update(dt);
 
-    const separation = this.computeSeparation();
-    const avoidance = this.world.arena.getAvoidanceVector(this.position, this.desiredVelocity, 3.1);
-    const steering = this.desiredVelocity.clone()
-      .addScaledVector(separation, 4)
-      .addScaledVector(avoidance, 6);
+    const playerDistance = this.position.distanceTo(this.world.player.position);
+    const isMeleePressuring = this.variant === 'melee' && playerDistance <= this.meleeEngageRange;
+    const separationWeight = isMeleePressuring ? 3 : 8;
+    const avoidanceWeight = isMeleePressuring ? 4 : 10;
+    const avoidanceLookAhead = isMeleePressuring ? 1.8 : 3.1;
+    const separation = this.computeSeparation().multiplyScalar(separationWeight);
+    const desired = this.velocity.lengthSq() > 0.0001 ? this.velocity : this.forward;
+    const avoidance = this.world.map.getAvoidanceVector(this.position, desired, avoidanceLookAhead).multiplyScalar(avoidanceWeight);
 
-    if (steering.lengthSq() > 0.0001) {
-      steering.normalize().multiplyScalar(this.config.speed);
-      this.forward.lerp(steering.clone().normalize(), Math.min(1, dt * 8));
+    this.applyForce(separation);
+    this.applyForce(avoidance);
+
+    this.velocity.addScaledVector(this.acceleration, dt);
+    this.velocity.multiplyScalar(this.friction);
+    this.velocity.clampLength(0, this.topSpeed);
+    this.position.copy(this.world.map.moveWithCollisions(this.position, this.velocity, this.radius, dt));
+
+    if (this.velocity.lengthSq() > 0.0001) {
+      this.forward.lerp(this.velocity.clone().normalize(), Math.min(1, dt * 14));
     }
 
-    this.velocity.lerp(steering, Math.min(1, dt * 5));
-    this.position.copy(this.world.arena.moveWithCollisions(this.position, this.velocity, this.radius, dt));
     this.syncVisuals();
+    this.acceleration.set(0, 0, 0);
   }
 
   syncVisuals() {
-    this.group.position.set(this.position.x, this.height / 2, this.position.z);
+    this.mesh.position.set(this.position.x, this.height / 2, this.position.z);
     if (this.forward.lengthSq() > 0.001) {
-      this.group.rotation.y = Math.atan2(this.forward.x, this.forward.z);
+      this.mesh.rotation.y = Math.atan2(this.forward.x, this.forward.z);
     }
   }
 
@@ -125,32 +146,12 @@ export class Enemy {
       return false;
     }
 
-    return this.world.arena.hasLineOfSight(this.position, player.position);
-  }
-
-  pursuePlayer(weight = 1) {
-    const desired = this.world.player.position.clone().sub(this.position).setY(0);
-    if (desired.lengthSq() > 0.0001) {
-      desired.normalize().multiplyScalar(weight);
-    }
-
-    this.desiredVelocity.copy(desired);
-  }
-
-  wander() {
-    if (!this.wanderTarget || this.position.distanceTo(this.wanderTarget) < 1.5) {
-      this.wanderTarget = this.world.arena.getRandomOpenPoint(this.position, 6);
-    }
-
-    const desired = this.wanderTarget.clone().sub(this.position).setY(0);
-    if (desired.lengthSq() > 0.0001) {
-      desired.normalize();
-    }
-    this.desiredVelocity.copy(desired);
+    return this.world.map.hasLineOfSight(this.position, player.position);
   }
 
   computeSeparation() {
     const push = new THREE.Vector3();
+
     for (const other of this.world.enemies) {
       if (other === this || !other.alive) {
         continue;
@@ -187,6 +188,7 @@ export class Enemy {
       return;
     }
 
+    this.velocity.multiplyScalar(0.2);
     this.cooldown = this.config.attackCooldown;
     this.world.player.takeDamage(this.config.damage);
   }
@@ -215,13 +217,17 @@ export class Enemy {
   }
 
   dispose(scene) {
-    scene.remove(this.group);
-    this.group.traverse((child) => {
+    scene.remove(this.mesh);
+    this.mesh.traverse((child) => {
       if (child.geometry) {
         child.geometry.dispose();
       }
       if (child.material) {
-        child.material.dispose();
+        if (Array.isArray(child.material)) {
+          child.material.forEach((material) => material.dispose());
+        } else {
+          child.material.dispose();
+        }
       }
     });
   }

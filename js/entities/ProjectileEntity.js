@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export class Projectile {
+export class ProjectileEntity {
   constructor(scene, { owner, position, direction, speed, damage, radius, lifetime, color }) {
     this.owner = owner;
     this.position = position.clone();

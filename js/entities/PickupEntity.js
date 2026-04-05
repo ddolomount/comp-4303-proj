@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Entity } from './Entity.js';
 
 const PICKUP_CONFIG = {
   health: {
@@ -17,18 +18,12 @@ const PICKUP_CONFIG = {
   },
 };
 
-export class Pickup {
+export class PickupEntity extends Entity {
   constructor(scene, type, position) {
-    this.scene = scene;
-    this.type = type;
-    this.position = position.clone().setY(0.7);
-    this.radius = 0.7;
-    this.alive = true;
-    this.age = 0;
-
     const config = PICKUP_CONFIG[type];
-    this.config = config;
-    this.mesh = new THREE.Mesh(
+    const basePosition = position.clone().setY(0.7);
+
+    const mesh = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.7, 0),
       new THREE.MeshStandardMaterial({
         color: config.color,
@@ -38,9 +33,22 @@ export class Pickup {
         roughness: 0.3,
       })
     );
-    this.mesh.position.copy(this.position);
+
+    super({
+      position: basePosition,
+      scale: new THREE.Vector3(1.4, 1.4, 1.4),
+      mesh,
+    });
+
+    this.scene = scene;
+    this.type = type;
+    this.config = config;
+    this.radius = 0.7;
+    this.alive = true;
+    this.age = 0;
+
     this.mesh.castShadow = true;
-    scene.add(this.mesh);
+    this.scene.add(this.mesh);
   }
 
   update(dt) {

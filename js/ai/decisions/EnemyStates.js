@@ -73,7 +73,7 @@ export class AttackState extends State {
     }
     enemy.desiredVelocity.copy(desired);
 
-    if (!enemy.world.arena.hasLineOfSight(enemy.position, player.position) || distance > enemy.attackRange + 3) {
+    if (!enemy.world.map.hasLineOfSight(enemy.position, player.position) || distance > enemy.attackRange + 3) {
       enemy.stateMachine.change(new ChaseState());
       return;
     }
