@@ -32,6 +32,9 @@ export class CollisionAvoidWhiskers {
       let end = start.clone().addScaledVector(ray.dir, ray.len);
 
       let hit = this.closestWallHit(start, end, map, entity.radius ?? 0.4);
+      if (!hit) {
+        continue;
+      }
 
       let target = hit.collisionPoint.clone().addScaledVector(hit.normal, howFar);
       let force = SteeringBehaviours.seek(entity, target).multiplyScalar(ray.weight);
