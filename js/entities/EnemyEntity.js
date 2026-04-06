@@ -107,18 +107,6 @@ export class EnemyEntity extends DynamicEntity {
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.stateMachine.update(dt);
 
-    const playerDistance = this.position.distanceTo(this.world.player.position);
-    const isMeleePressuring = this.variant === 'melee' && playerDistance <= this.meleeEngageRange;
-    const separationWeight = isMeleePressuring ? 3 : 8;
-    const avoidanceWeight = isMeleePressuring ? 4 : 10;
-    const avoidanceLookAhead = isMeleePressuring ? 1.8 : 3.1;
-    const separation = this.computeSeparation().multiplyScalar(separationWeight);
-    const desired = this.velocity.lengthSq() > 0.0001 ? this.velocity : this.forward;
-    const avoidance = this.world.map.getAvoidanceVector(this.position, desired, avoidanceLookAhead).multiplyScalar(avoidanceWeight);
-
-    this.applyForce(separation);
-    this.applyForce(avoidance);
-
     this.velocity.addScaledVector(this.acceleration, dt);
     this.velocity.multiplyScalar(this.friction);
     this.velocity.clampLength(0, this.topSpeed);
@@ -147,26 +135,6 @@ export class EnemyEntity extends DynamicEntity {
     }
 
     return this.world.map.hasLineOfSight(this.position, player.position);
-  }
-
-  computeSeparation() {
-    const push = new THREE.Vector3();
-
-    for (const other of this.world.enemies) {
-      if (other === this || !other.alive) {
-        continue;
-      }
-
-      const delta = this.position.clone().sub(other.position);
-      const distance = delta.length();
-      if (distance === 0 || distance > 2.2) {
-        continue;
-      }
-
-      push.add(delta.normalize().multiplyScalar((2.2 - distance) / 2.2));
-    }
-
-    return push;
   }
 
   takeDamage(amount) {

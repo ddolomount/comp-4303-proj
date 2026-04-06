@@ -1,6 +1,9 @@
+import * as THREE from 'three';
 import { State } from '../State.js';
 import { ChaseState } from './ChaseState.js';
 import { SteeringBehaviours } from '../../steering/SteeringBehaviours.js';
+import { GroupSteeringBehaviours } from '../../steering/GroupSteeringBehaviours.js';
+import { CollisionAvoidWhiskers } from '../../steering/CollisionAvoidWhiskers.js';
 
 export class PatrolState extends State {
   
@@ -9,8 +12,21 @@ export class PatrolState extends State {
   }
 
   update(entity, dt) {
-    const wanderForce = SteeringBehaviours.wander(entity);
-    entity.applyForce(wanderForce);
+    const steer = new THREE.Vector3();
+    steer.add(SteeringBehaviours.wander(entity));
+    steer.add(GroupSteeringBehaviours.flock(entity, entity.world.enemies.filter((other) => other.alive), {
+      separationRadius: 2.4,
+      separationWeight: 1.2,
+      alignmentRadius: 4.2,
+      alignmentWeight: 0.18,
+      cohesionRadius: 5.2,
+      cohesionWeight: 0.08,
+    }));
+    steer.add(
+      CollisionAvoidWhiskers.whiskers(entity, entity.world.map, 3.4, 2.8, Math.PI / 4, 2.4, entity.maxForce)
+        .multiplyScalar(1.1)
+    );
+    entity.applyForce(steer);
     
     if (entity.canSeePlayer() || entity.alerted) {
       entity.stateMachine.change(new ChaseState());

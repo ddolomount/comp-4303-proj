@@ -7,6 +7,10 @@ import { EnemyEntity } from './entities/EnemyEntity.js';
 import { PickupEntity } from './entities/PickupEntity.js';
 import { PlayerEntity } from './entities/PlayerEntity.js';
 import { ProjectileEntity } from './entities/ProjectileEntity.js';
+import { ProtectEntity } from './entities/ProtectEntity.js';
+import { WaveDirector } from './gameflow/WaveDirector.js';
+import { StateMachine } from './ai/decisions/StateMachine.js';
+import { WaveSetupState } from './gameflow/states/WaveSetupState.js';
 
 const CAMERA_OFFSET = new THREE.Vector3(0, 34, 10);
 
@@ -22,13 +26,19 @@ export class World {
     this.hud = new Hud();
     this.input = new InputHandler(this.camera, this.renderer.domElement);
 
+    this.waveDirector = new WaveDirector();
+    this.gameStateMachine = null;
+    this.currentWaveConfig = null;
+    
     this.projectiles = [];
     this.enemies = [];
     this.pickups = [];
+    this.protectEntity = null;
 
     this.score = 0;
     this.wave = 0;
     this.pendingWaveTimer = 0;
+    this.protectTimer = 0;
     this.gameOver = false;
     this.arenaRegenerated = false;
 
@@ -42,9 +52,8 @@ export class World {
     this.map = new TileMap(this.scene, { rows: 31, cols: 31, tileSize: 3 });
     this.player = new PlayerEntity(this.scene);
     this.player.setPosition(this.map.center.x, this.map.center.z);
-
-    this.hud.setMessage('Enter the arena');
-    this.startWave();
+    this.gameStateMachine = new StateMachine(this, new WaveSetupState());
+    this.gameStateMachine.state.enter(this);
   }
 
   // Restart game upon loss
@@ -64,17 +73,23 @@ export class World {
     this.projectiles = [];
     this.enemies = [];
     this.pickups = [];
+    if (this.protectEntity) {
+      this.protectEntity.dispose(this.scene);
+      this.protectEntity = null;
+    }
 
     this.score = 0;
     this.wave = 0;
     this.pendingWaveTimer = 0;
+    this.protectTimer = 0;
+    this.currentWaveConfig = null;
     this.gameOver = false;
     this.arenaRegenerated = false;
 
     this.player.reset();
     this.player.setPosition(this.map.center.x, this.map.center.z);
     this.hud.setMessage('System rebooted');
-    this.startWave();
+    this.gameStateMachine.change(new WaveSetupState());
   }
 
   // Start new wave after previous restart or previous wave completed
@@ -103,22 +118,72 @@ export class World {
     this.hud.setMessage(`Wave ${this.wave}`);
   }
 
+  spawnEnemies(config) {
+    if (!this.map || !this.enemies) {
+      return;
+    }
+
+    let meleeChance = config.enemyMix?.melee ?? 0.55;
+    let enemyCount = config.enemyCount ?? 0;
+
+    for (let i = 0; i < enemyCount; i++) {
+      let variant = Math.random() < meleeChance ? 'melee' : 'ranged';
+      let spawn = this.map.getEdgeSpawnPoint(this.player?.position, 16);
+      let enemyClass = this.enemyClass ?? EnemyEntity;
+      let enemy = new enemyClass(this.scene, this, variant, this.wave);
+      enemy.setPosition(spawn.x, spawn.z);
+      this.enemies.push(enemy);
+    }
+  }
+
+  spawnProtect(config) {
+    if (!this.map) {
+      return;
+    }
+
+    if (this.protectEntity) {
+      this.protectEntity.dispose(this.scene);
+      this.protectEntity = null;
+    }
+
+    const protectConfig = config?.protectTarget ?? {};
+    const spawnPoint = this.map.getRandomOpenPoint(this.player?.position, 8);
+    const protectEntity = new ProtectEntity(this.scene);
+
+    if (typeof protectConfig.health === 'number') {
+      protectEntity.maxHealth = protectConfig.health;
+      protectEntity.health = protectConfig.health;
+    } else {
+      protectEntity.reset();
+    }
+
+    protectEntity.setPosition(spawnPoint.x, spawnPoint.z);
+    this.protectEntity = protectEntity;
+    return protectEntity;
+  }
+
+  // Reset dynamic parts of world
   clearTransientObjects() {
-    for (const projectile of this.projectiles) {
+    for (let projectile of this.projectiles) {
       projectile.dispose(this.scene);
     }
 
-    for (const enemy of this.enemies) {
+    for (let enemy of this.enemies) {
       enemy.dispose(this.scene);
     }
 
-    for (const pickup of this.pickups) {
+    for (let pickup of this.pickups) {
       pickup.dispose(this.scene);
     }
 
     this.projectiles = [];
     this.enemies = [];
     this.pickups = [];
+
+    if (this.protectEntity) {
+      this.protectEntity.dispose(this.scene);
+      this.protectEntity = null;
+    }
   }
 
   // Spawn health packs and score multipliers
@@ -141,34 +206,10 @@ export class World {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     this.input.updatePointerWorld(this.camera);
 
-    if (this.gameOver) {
-      if (this.input.consumeRestart()) {
-        this.restart();
-      }
-
-      this.updateHud(dt);
-      this.updateCamera(dt);
-      return;
+    if (this.gameStateMachine) {
+      this.gameStateMachine.update(dt);
     }
 
-    this.player.update(dt, this.input, this);
-
-    for (const enemy of this.enemies) {
-      enemy.update(dt);
-    }
-
-    for (const projectile of this.projectiles) {
-      projectile.update(dt);
-    }
-
-    for (const pickup of this.pickups) {
-      pickup.update(dt);
-    }
-
-    this.resolveProjectileHits();
-    this.resolvePickupCollection();
-    this.cleanupObjects();
-    this.updateWaveFlow(dt);
     this.updateCamera(dt);
     this.updateHud(dt);
   }
@@ -288,11 +329,6 @@ export class World {
   }
 
   updateHud(dt) {
-    if (this.player.health <= 0 && !this.gameOver) {
-      this.gameOver = true;
-      this.hud.setMessage('Core failure - press R to restart', true);
-    }
-
     this.hud.render({
       score: this.score,
       wave: this.wave,
