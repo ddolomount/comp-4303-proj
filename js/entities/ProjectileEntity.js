@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 
+const PROJECTILE_LENGTH_MULTIPLIER = 4.6;
+const PROJECTILE_GLOW_MULTIPLIER = 1.85;
+const FORWARD_AXIS = new THREE.Vector3(0, 0, 1);
+
 export class ProjectileEntity {
   constructor(scene, { owner, position, direction, speed, damage, radius, lifetime, color }) {
     this.owner = owner;
@@ -9,18 +13,63 @@ export class ProjectileEntity {
     this.radius = radius;
     this.lifetime = lifetime;
     this.alive = true;
+    this.direction = this.velocity.clone().normalize();
 
-    this.mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(radius, 12, 12),
-      new THREE.MeshStandardMaterial({
+    const boltLength = radius * PROJECTILE_LENGTH_MULTIPLIER;
+    const glowRadius = radius * PROJECTILE_GLOW_MULTIPLIER;
+    this.mesh = new THREE.Group();
+
+    const glow = new THREE.Mesh(
+      new THREE.CylinderGeometry(glowRadius, glowRadius, boltLength * 1.15, 14, 1, true),
+      new THREE.MeshBasicMaterial({
         color,
-        emissive: color,
-        emissiveIntensity: 0.85,
-        metalness: 0.1,
-        roughness: 0.2,
+        transparent: true,
+        opacity: 0.28,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide,
       })
     );
-    this.mesh.castShadow = true;
+    glow.rotation.x = Math.PI / 2;
+    this.mesh.add(glow);
+
+    const core = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius * 0.72, radius * 0.72, boltLength, 14),
+      new THREE.MeshStandardMaterial({
+        color: '#ffffff',
+        emissive: color,
+        emissiveIntensity: 1.8,
+        metalness: 0.05,
+        roughness: 0.12,
+      })
+    );
+    core.rotation.x = Math.PI / 2;
+    core.castShadow = true;
+    this.mesh.add(core);
+
+    const frontCap = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 0.95, 12, 12),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.9,
+      })
+    );
+    frontCap.position.z = boltLength * 0.5;
+    this.mesh.add(frontCap);
+
+    const backCap = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 0.8, 10, 10),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.45,
+      })
+    );
+    backCap.position.z = -boltLength * 0.35;
+    this.mesh.add(backCap);
+
+    this.mesh.quaternion.setFromUnitVectors(FORWARD_AXIS, this.direction);
     this.mesh.position.copy(this.position);
     scene.add(this.mesh);
   }
@@ -34,11 +83,22 @@ export class ProjectileEntity {
 
     this.position.addScaledVector(this.velocity, dt);
     this.mesh.position.copy(this.position);
+    this.mesh.quaternion.setFromUnitVectors(FORWARD_AXIS, this.direction);
   }
 
   dispose(scene) {
     scene.remove(this.mesh);
-    this.mesh.geometry.dispose();
-    this.mesh.material.dispose();
+    this.mesh.traverse((child) => {
+      if (child.geometry) {
+        child.geometry.dispose();
+      }
+      if (child.material) {
+        if (Array.isArray(child.material)) {
+          child.material.forEach((material) => material.dispose());
+        } else {
+          child.material.dispose();
+        }
+      }
+    });
   }
 }

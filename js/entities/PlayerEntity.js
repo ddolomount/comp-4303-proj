@@ -1,18 +1,21 @@
 import * as THREE from 'three';
 import { Entity } from './Entity.js';
+import { createModelInstance, pickDefaultAnimationClip } from '../loaders/ModelUtils.js';
 
-const PLAYER_HEIGHT = 1.3;
+const PLAYER_HEIGHT = 1.45;
+const PLAYER_RADIUS = 0.78;
 
 export class PlayerEntity extends Entity {
-  constructor(scene) {
+  constructor(scene, modelTemplate = null) {
+    const { mesh, clips } = PlayerEntity.createMesh(modelTemplate);
     super({
       position: new THREE.Vector3(),
-      scale: new THREE.Vector3(1.8, PLAYER_HEIGHT, 1.8),
-      mesh: PlayerEntity.createMesh(),
+      scale: new THREE.Vector3(2, PLAYER_HEIGHT, 2),
+      mesh,
     });
 
     this.scene = scene;
-    this.radius = 0.7;
+    this.radius = PLAYER_RADIUS;
     this.speed = 14;
     this.maxHealth = 100;
     this.health = this.maxHealth;
@@ -22,14 +25,26 @@ export class PlayerEntity extends Entity {
     this.velocity = new THREE.Vector3();
     this.aimDirection = new THREE.Vector3(1, 0, 0);
     this.group = this.mesh;
-    this.barrel = this.group.children[1];
+    this.animationMixer = null;
+    this.animationActions = new Map();
+    this.activeAnimation = null;
+    this.setupAnimations(clips);
 
     this.scene.add(this.group);
     this.syncVisuals();
   }
 
-  static createMesh() {
+  static createMesh(modelTemplate) {
     const group = new THREE.Group();
+
+    const { model, clips } = createModelInstance(modelTemplate, {
+      targetHeight: PLAYER_HEIGHT,
+      yaw: -Math.PI / 2,
+    });
+    if (model) {
+      group.add(model);
+      return { mesh: group, clips };
+    }
 
     const body = new THREE.Mesh(
       new THREE.CylinderGeometry(0.7, 0.9, PLAYER_HEIGHT, 20),
@@ -57,7 +72,85 @@ export class PlayerEntity extends Entity {
     barrel.position.set(0, 0.4, 0.8);
     group.add(barrel);
 
-    return group;
+    return { mesh: group, clips: [] };
+  }
+
+  setupAnimations(clips) {
+    this.resetAnimations();
+
+    if (!clips?.length) {
+      return;
+    }
+
+    this.animationMixer = new THREE.AnimationMixer(this.group);
+    for (const clip of clips) {
+      this.animationActions.set(clip.name, this.animationMixer.clipAction(clip));
+    }
+
+    this.playAnimation(pickDefaultAnimationClip(clips)?.name);
+  }
+
+  playAnimation(name) {
+    if (!name || !this.animationActions.has(name) || this.activeAnimation === name) {
+      return;
+    }
+
+    for (const action of this.animationActions.values()) {
+      action.stop();
+    }
+
+    const action = this.animationActions.get(name);
+    action.reset();
+    action.play();
+    this.activeAnimation = name;
+  }
+
+  resetAnimations() {
+    if (this.animationMixer) {
+      this.animationMixer.stopAllAction();
+      this.animationMixer.uncacheRoot(this.group);
+    }
+
+    this.animationMixer = null;
+    this.animationActions = new Map();
+    this.activeAnimation = null;
+  }
+
+  applyModelTemplate(modelTemplate) {
+    const { mesh, clips } = PlayerEntity.createMesh(modelTemplate);
+    this.replaceVisualMesh(mesh);
+    this.setupAnimations(clips);
+    this.syncVisuals();
+  }
+
+  replaceVisualMesh(newMesh) {
+    this.clearVisualChildren();
+    while (newMesh.children.length > 0) {
+      this.group.add(newMesh.children[0]);
+    }
+  }
+
+  clearVisualChildren() {
+    while (this.group.children.length > 0) {
+      const child = this.group.children[0];
+      this.group.remove(child);
+      this.disposeObject3D(child);
+    }
+  }
+
+  disposeObject3D(object) {
+    object.traverse((child) => {
+      if (child.geometry) {
+        child.geometry.dispose();
+      }
+      if (child.material) {
+        if (Array.isArray(child.material)) {
+          child.material.forEach((material) => material.dispose());
+        } else {
+          child.material.dispose();
+        }
+      }
+    });
   }
 
   reset() {
@@ -73,6 +166,10 @@ export class PlayerEntity extends Entity {
   }
 
   update(dt, input, world) {
+    if (this.animationMixer) {
+      this.animationMixer.update(dt);
+    }
+
     this.fireCooldown = Math.max(0, this.fireCooldown - dt);
     this.multiplierTimer = Math.max(0, this.multiplierTimer - dt);
 
@@ -127,17 +224,7 @@ export class PlayerEntity extends Entity {
 
   dispose(scene) {
     scene.remove(this.group);
-    this.group.traverse((child) => {
-      if (child.geometry) {
-        child.geometry.dispose();
-      }
-      if (child.material) {
-        if (Array.isArray(child.material)) {
-          child.material.forEach((material) => material.dispose());
-        } else {
-          child.material.dispose();
-        }
-      }
-    });
+    this.resetAnimations();
+    this.disposeObject3D(this.group);
   }
 }

@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 
 export class AssetLoader {
@@ -16,8 +15,8 @@ export class AssetLoader {
       this.loader.load(
         path,
         (gltf) => {
-          this.cache.set(path, gltf.scene);
-          resolve(gltf.scene);
+          this.cache.set(path, gltf);
+          resolve(gltf);
         },
         undefined,
         (error) => reject(error)
@@ -27,9 +26,11 @@ export class AssetLoader {
 
   async loadAll() {
     const assets = {};
-    assets.player = await this.load('rodot_5000_-_flying_robot.glb');
-    assets.meleeEnemy = await this.load('chopper_robot_low_poly.glb');
-    assets.rangedEnemy = await this.load('dalek.glb');
+    assets.player = await this.load('/public/rodot_5000_-_flying_robot.glb');
+    assets.meleeEnemy = await this.load('/public/chopper_robot_low_poly.glb');
+    assets.rangedEnemy = await this.load('/public/dalek.glb');
+    assets.healthPickup = await this.load('/public/health_pack.glb');
+    assets.multiplierPickup = await this.load('/public/lightning_bolt.glb');
     return assets;
   }
 }

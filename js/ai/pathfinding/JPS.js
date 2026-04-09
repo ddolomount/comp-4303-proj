@@ -1,6 +1,6 @@
-import * as THREE from "three";
-import { MinHeap } from "./util/MinHeap";
-import { Pathfinder } from "./Pathfinder";
+import * as THREE from 'three';
+import { MinHeap } from './util/MinHeap.js';
+import { Pathfinder } from './Pathfinder.js';
 
 export class JPS extends Pathfinder {
 
@@ -68,7 +68,7 @@ export class JPS extends Pathfinder {
       if (jp) {
         successors.push(jp);
 
-        this.tileMapRenderer.setTileColor(jp, new THREE.Color("orange"));
+        this.tileMapRenderer?.setTileColor(jp, new THREE.Color('orange'));
       }
 
     }

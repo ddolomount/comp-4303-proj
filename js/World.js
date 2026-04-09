@@ -10,9 +10,14 @@ import { ProjectileEntity } from './entities/ProjectileEntity.js';
 import { ProtectEntity } from './entities/ProtectEntity.js';
 import { WaveDirector } from './gameflow/WaveDirector.js';
 import { StateMachine } from './ai/decisions/StateMachine.js';
+import { JPS } from './ai/pathfinding/JPS.js';
+import { AssetLoader } from './loaders/AssetLoader.js';
 import { WaveSetupState } from './gameflow/states/WaveSetupState.js';
 
 const CAMERA_OFFSET = new THREE.Vector3(0, 34, 10);
+const PATH_HEURISTIC = (a, b, weight = 1) => (
+  (Math.abs(a.row - b.row) + Math.abs(a.col - b.col)) * weight
+);
 
 export class World {
   constructor() {
@@ -29,6 +34,10 @@ export class World {
     this.waveDirector = new WaveDirector();
     this.gameStateMachine = null;
     this.currentWaveConfig = null;
+    this.pathfinder = null;
+    this.assetLoader = new AssetLoader();
+    this.assets = {};
+    this.assetLoadPromise = null;
     
     this.projectiles = [];
     this.enemies = [];
@@ -50,10 +59,45 @@ export class World {
     Setup.createLights(this.scene);
 
     this.map = new TileMap(this.scene, { rows: 31, cols: 31, tileSize: 3 });
-    this.player = new PlayerEntity(this.scene);
+    this.player = new PlayerEntity(this.scene, this.assets.player);
     this.player.setPosition(this.map.center.x, this.map.center.z);
     this.gameStateMachine = new StateMachine(this, new WaveSetupState());
     this.gameStateMachine.state.enter(this);
+    this.loadAssetsInBackground();
+  }
+
+  loadAssetsInBackground() {
+    if (this.assetLoadPromise) {
+      return this.assetLoadPromise;
+    }
+
+    this.assetLoadPromise = this.assetLoader.loadAll()
+      .then((assets) => {
+        this.assets = assets;
+        this.applyLoadedAssets();
+        return assets;
+      })
+      .catch((error) => {
+        console.error('Failed to load GLB assets, using fallback meshes instead.', error);
+        this.assets = {};
+        return {};
+      });
+
+    return this.assetLoadPromise;
+  }
+
+  applyLoadedAssets() {
+    if (this.player) {
+      this.player.applyModelTemplate(this.assets.player);
+    }
+
+    for (const enemy of this.enemies) {
+      enemy.applyModelTemplate(this.getEnemyModel(enemy.variant));
+    }
+
+    for (const pickup of this.pickups) {
+      pickup.applyModelTemplate(this.getPickupModel(pickup.type));
+    }
   }
 
   // Restart game upon loss
@@ -109,7 +153,7 @@ export class World {
     for (let i = 0; i < enemyCount; i += 1) {
       const variant = Math.random() < Math.min(0.25 + this.wave * 0.06, 0.55) ? 'ranged' : 'melee';
       const spawn = this.map.getEdgeSpawnPoint(this.player.position, 16);
-      const enemy = new EnemyEntity(this.scene, this, variant, this.wave);
+      const enemy = new EnemyEntity(this.scene, this, variant, this.wave, this.getEnemyModel(variant));
       enemy.setPosition(spawn.x, spawn.z);
       this.enemies.push(enemy);
     }
@@ -130,10 +174,22 @@ export class World {
       let variant = Math.random() < meleeChance ? 'melee' : 'ranged';
       let spawn = this.map.getEdgeSpawnPoint(this.player?.position, 16);
       let enemyClass = this.enemyClass ?? EnemyEntity;
-      let enemy = new enemyClass(this.scene, this, variant, this.wave);
+      let enemy = new enemyClass(this.scene, this, variant, this.wave, this.getEnemyModel(variant));
       enemy.setPosition(spawn.x, spawn.z);
       this.enemies.push(enemy);
     }
+  }
+
+  getEnemyModel(variant) {
+    return variant === 'melee'
+      ? this.assets?.meleeEnemy
+      : this.assets?.rangedEnemy;
+  }
+
+  getPickupModel(type) {
+    return type === 'health'
+      ? this.assets?.healthPickup
+      : this.assets?.multiplierPickup;
   }
 
   spawnProtect(config) {
@@ -160,6 +216,22 @@ export class World {
     protectEntity.setPosition(spawnPoint.x, spawnPoint.z);
     this.protectEntity = protectEntity;
     return protectEntity;
+  }
+
+  getPathfinder() {
+    if (!this.map) {
+      return null;
+    }
+
+    if (
+      !this.pathfinder ||
+      this.pathfinder.map !== this.map ||
+      this.pathfinder.tileMapRenderer !== this.map.renderer
+    ) {
+      this.pathfinder = new JPS(this.map, PATH_HEURISTIC, this.map.renderer);
+    }
+
+    return this.pathfinder;
   }
 
   // Reset dynamic parts of world
@@ -191,8 +263,8 @@ export class World {
     const healthSpot = this.map.getRandomOpenPoint(this.player.position, 10);
     const multiplierSpot = this.map.getRandomOpenPoint(this.player.position, 12);
 
-    this.pickups.push(new PickupEntity(this.scene, 'health', healthSpot));
-    this.pickups.push(new PickupEntity(this.scene, 'multiplier', multiplierSpot));
+    this.pickups.push(new PickupEntity(this.scene, 'health', healthSpot, this.getPickupModel('health')));
+    this.pickups.push(new PickupEntity(this.scene, 'multiplier', multiplierSpot, this.getPickupModel('multiplier')));
   }
 
   addProjectile(config) {
@@ -262,7 +334,9 @@ export class World {
               this.score += enemy.scoreValue * this.player.getScoreMultiplier();
               if (Math.random() < 0.16) {
                 const pickupKind = Math.random() < 0.6 ? 'health' : 'multiplier';
-                this.pickups.push(new PickupEntity(this.scene, pickupKind, enemy.position));
+                this.pickups.push(
+                  new PickupEntity(this.scene, pickupKind, enemy.position, this.getPickupModel(pickupKind))
+                );
               }
             }
 

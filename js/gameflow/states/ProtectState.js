@@ -1,4 +1,5 @@
 import { State } from '../../ai/decisions/State.js';
+import { AdvanceToProtectState } from '../../ai/decisions/EnemyStates/AdvanceToProtectState.js';
 import { GameOverState } from './GameOverState.js';
 import { IntermissionState } from './IntermissionState.js';
 
@@ -6,6 +7,10 @@ export class ProtectState extends State {
   enter(world) {
     world.protectTimer = 0;
     world.spawnProtect(world.currentWaveConfig);
+    world.getPathfinder();
+    for (const enemy of world.enemies) {
+      enemy.stateMachine.change(new AdvanceToProtectState());
+    }
     world.hud.setMessage(`Protect Wave ${world.wave}`);
   }
 
