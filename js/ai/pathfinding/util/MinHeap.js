@@ -1,5 +1,4 @@
 export class MinHeap {
-  
   // Constructor
   constructor() {
     this.heap = [];
@@ -9,7 +8,7 @@ export class MinHeap {
   isEmpty() {
     return this.heap.length === 0;
   }
-  
+
   // Returns the top node of the priority queue without removal
   peek() {
     return this.heap.length === 0 ? null : this.heap[0];
@@ -22,12 +21,12 @@ export class MinHeap {
 
   // Get the left child index of a node at the provided index
   getLeftChildIndex(index) {
-    return (2 * index) + 1;
+    return 2 * index + 1;
   }
 
   // Get the right child index of a node at the provided index
   getRightChildIndex(index) {
-    return (2 * index) + 2;
+    return 2 * index + 2;
   }
 
   // Swaps positions of node at index1 and node at index2
@@ -57,7 +56,7 @@ export class MinHeap {
     }
   }
 
-  // Removes the top node of the priority queue 
+  // Removes the top node of the priority queue
   dequeue() {
     if (this.heap.length === 0) return null;
 
@@ -67,8 +66,8 @@ export class MinHeap {
     this.heap[0] = this.heap[this.heap.length - 1];
     this.heap.pop();
 
-    this.heapifyDown(0); 
-    return data; 
+    this.heapifyDown(0);
+    return data;
   }
 
   // Resort the priority queue to retain the min heap property
@@ -78,12 +77,16 @@ export class MinHeap {
       let rightChildIndex = this.getRightChildIndex(index);
       let smallest = index;
 
-      if (leftChildIndex < this.heap.length &&
-        this.heap[leftChildIndex][1] < this.heap[smallest][1]) {
+      if (
+        leftChildIndex < this.heap.length &&
+        this.heap[leftChildIndex][1] < this.heap[smallest][1]
+      ) {
         smallest = leftChildIndex;
       }
-      if (rightChildIndex < this.heap.length &&
-        this.heap[rightChildIndex][1] < this.heap[smallest][1]) {
+      if (
+        rightChildIndex < this.heap.length &&
+        this.heap[rightChildIndex][1] < this.heap[smallest][1]
+      ) {
         smallest = rightChildIndex;
       }
       if (smallest !== index) {

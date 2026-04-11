@@ -1,6 +1,5 @@
 export class Pathfinder {
-
-  // Pathfinding constructor 
+  // Pathfinding constructor
   constructor() {
     if (new.target === Pathfinder) {
       throw new Error("Cannot initialize abstract class");
@@ -22,7 +21,7 @@ export class Pathfinder {
       current = parents.get(current);
       path.unshift(current);
     }
-    
+
     return path;
   }
 }

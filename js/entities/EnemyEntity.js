@@ -1,34 +1,37 @@
-import * as THREE from 'three';
-import { DynamicEntity } from './DynamicEntity.js';
-import { StateMachine } from '../ai/decisions/StateMachine.js';
-import { PatrolState } from '../ai/decisions/EnemyStates/PatrolState.js';
-import { ChaseState } from '../ai/decisions/EnemyStates/ChaseState.js';
-import { AttackState } from '../ai/decisions/EnemyStates/AttackState.js';
-import { createModelInstance, pickDefaultAnimationClip } from '../loaders/ModelUtils.js';
+import * as THREE from "three";
+import { DynamicEntity } from "./DynamicEntity.js";
+import { StateMachine } from "../ai/decisions/StateMachine.js";
+import { PatrolState } from "../ai/decisions/EnemyStates/PatrolState.js";
+import { ChaseState } from "../ai/decisions/EnemyStates/ChaseState.js";
+import { AttackState } from "../ai/decisions/EnemyStates/AttackState.js";
+import {
+  createModelInstance,
+  pickDefaultAnimationClip
+} from "../loaders/ModelUtils.js";
 
 const VARIANT_CONFIG = {
   melee: {
-    color: '#ff8778',
-    emissive: '#ff6657',
+    color: "#ff8778",
+    emissive: "#ff6657",
     speed: 15,
     health: 52,
     detectionRange: 18,
     attackRange: 1.45,
     attackCooldown: 0.72,
     damage: 12,
-    scoreValue: 100,
+    scoreValue: 100
   },
   ranged: {
-    color: '#7ca9ff',
-    emissive: '#70a0ff',
+    color: "#7ca9ff",
+    emissive: "#70a0ff",
     speed: 8,
     health: 38,
     detectionRange: 24,
     attackRange: 12,
     attackCooldown: 1.35,
     damage: 10,
-    scoreValue: 135,
-  },
+    scoreValue: 135
+  }
 };
 
 const HEALTH_BAR_WIDTH = 1.15;
@@ -48,7 +51,7 @@ export class EnemyEntity extends DynamicEntity {
       topSpeed: config.speed,
       friction: 0.97,
       mass: 1,
-      maxForce: 42,
+      maxForce: 42
     });
 
     this.scene = scene;
@@ -90,7 +93,7 @@ export class EnemyEntity extends DynamicEntity {
     const group = new THREE.Group();
 
     const { model, clips } = createModelInstance(modelTemplate, {
-      targetHeight: ENEMY_HEIGHT,
+      targetHeight: ENEMY_HEIGHT
     });
     if (model) {
       group.add(model);
@@ -104,7 +107,7 @@ export class EnemyEntity extends DynamicEntity {
         emissive: config.emissive,
         emissiveIntensity: 0.4,
         metalness: 0.18,
-        roughness: 0.36,
+        roughness: 0.36
       })
     );
     body.castShadow = true;
@@ -113,9 +116,9 @@ export class EnemyEntity extends DynamicEntity {
     const sensor = new THREE.Mesh(
       new THREE.BoxGeometry(0.28, 0.28, 1.05),
       new THREE.MeshStandardMaterial({
-        color: '#061817',
-        emissive: '#cffff6',
-        emissiveIntensity: 0.18,
+        color: "#061817",
+        emissive: "#cffff6",
+        emissiveIntensity: 0.18
       })
     );
     sensor.position.set(0, 0.25, 0.95);
@@ -133,14 +136,21 @@ export class EnemyEntity extends DynamicEntity {
 
     this.animationMixer = new THREE.AnimationMixer(this.mesh);
     for (const clip of clips) {
-      this.animationActions.set(clip.name, this.animationMixer.clipAction(clip));
+      this.animationActions.set(
+        clip.name,
+        this.animationMixer.clipAction(clip)
+      );
     }
 
     this.playAnimation(pickDefaultAnimationClip(clips)?.name);
   }
 
   playAnimation(name) {
-    if (!name || !this.animationActions.has(name) || this.activeAnimation === name) {
+    if (
+      !name ||
+      !this.animationActions.has(name) ||
+      this.activeAnimation === name
+    ) {
       return;
     }
 
@@ -181,7 +191,9 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   clearVisualChildren() {
-    const preserved = this.healthBarGroup ? new Set([this.healthBarGroup]) : new Set();
+    const preserved = this.healthBarGroup
+      ? new Set([this.healthBarGroup])
+      : new Set();
     const children = [...this.mesh.children];
     for (const child of children) {
       if (preserved.has(child)) {
@@ -227,10 +239,20 @@ export class EnemyEntity extends DynamicEntity {
     this.velocity.addScaledVector(this.acceleration, dt);
     this.velocity.multiplyScalar(this.friction);
     this.velocity.clampLength(0, this.topSpeed);
-    this.position.copy(this.world.map.moveWithCollisions(this.position, this.velocity, this.radius, dt));
+    this.position.copy(
+      this.world.map.moveWithCollisions(
+        this.position,
+        this.velocity,
+        this.radius,
+        dt
+      )
+    );
 
     if (this.velocity.lengthSq() > 0.0001) {
-      this.forward.lerp(this.velocity.clone().normalize(), Math.min(1, dt * 14));
+      this.forward.lerp(
+        this.velocity.clone().normalize(),
+        Math.min(1, dt * 14)
+      );
     }
 
     this.syncVisuals();
@@ -255,7 +277,10 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   isProtectObjectiveActive() {
-    return this.world.currentWaveConfig?.type === 'protect' && Boolean(this.world.protectEntity);
+    return (
+      this.world.currentWaveConfig?.type === "protect" &&
+      Boolean(this.world.protectEntity)
+    );
   }
 
   takeDamage(amount) {
@@ -272,7 +297,10 @@ export class EnemyEntity extends DynamicEntity {
       return;
     }
 
-    if (!(this.stateMachine.state instanceof ChaseState) && !(this.stateMachine.state instanceof AttackState)) {
+    if (
+      !(this.stateMachine.state instanceof ChaseState) &&
+      !(this.stateMachine.state instanceof AttackState)
+    ) {
       this.stateMachine.change(new ChaseState());
     }
   }
@@ -285,21 +313,24 @@ export class EnemyEntity extends DynamicEntity {
     const background = new THREE.Mesh(
       new THREE.PlaneGeometry(HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT),
       new THREE.MeshBasicMaterial({
-        color: '#200909',
+        color: "#200909",
         transparent: true,
         opacity: 0.9,
         depthWrite: false,
-        side: THREE.DoubleSide,
+        side: THREE.DoubleSide
       })
     );
 
     const fill = new THREE.Mesh(
-      new THREE.PlaneGeometry(HEALTH_BAR_WIDTH - 0.04, HEALTH_BAR_HEIGHT - 0.04),
+      new THREE.PlaneGeometry(
+        HEALTH_BAR_WIDTH - 0.04,
+        HEALTH_BAR_HEIGHT - 0.04
+      ),
       new THREE.MeshBasicMaterial({
-        color: '#71ff80',
+        color: "#71ff80",
         transparent: true,
         depthWrite: false,
-        side: THREE.DoubleSide,
+        side: THREE.DoubleSide
       })
     );
 
@@ -320,15 +351,16 @@ export class EnemyEntity extends DynamicEntity {
 
     const ratio = THREE.MathUtils.clamp(this.health / this.maxHealth, 0, 1);
     this.healthBarFill.scale.x = ratio;
-    this.healthBarFill.position.x = -((1 - ratio) * (HEALTH_BAR_WIDTH - 0.04)) / 2;
+    this.healthBarFill.position.x =
+      -((1 - ratio) * (HEALTH_BAR_WIDTH - 0.04)) / 2;
     this.healthBarGroup.visible = this.alive && ratio > 0;
 
     if (ratio > 0.6) {
-      this.healthBarFill.material.color.set('#71ff80');
+      this.healthBarFill.material.color.set("#71ff80");
     } else if (ratio > 0.3) {
-      this.healthBarFill.material.color.set('#ffd85f');
+      this.healthBarFill.material.color.set("#ffd85f");
     } else {
-      this.healthBarFill.material.color.set('#ff6d6d');
+      this.healthBarFill.material.color.set("#ff6d6d");
     }
   }
 
@@ -357,21 +389,27 @@ export class EnemyEntity extends DynamicEntity {
       return;
     }
 
-    const direction = this.world.player.position.clone().sub(this.position).setY(0);
+    const direction = this.world.player.position
+      .clone()
+      .sub(this.position)
+      .setY(0);
     if (direction.lengthSq() === 0) {
       return;
     }
 
     this.cooldown = this.config.attackCooldown;
     this.world.addProjectile({
-      owner: 'enemy',
-      position: this.position.clone().add(direction.clone().normalize().multiplyScalar(1.1)).setY(0.45),
+      owner: "enemy",
+      position: this.position
+        .clone()
+        .add(direction.clone().normalize().multiplyScalar(1.1))
+        .setY(0.45),
       direction,
       speed: 16,
       damage: this.config.damage,
       radius: 0.24,
       lifetime: 1.8,
-      color: '#ffb08c',
+      color: "#ffb08c"
     });
   }
 
@@ -388,14 +426,17 @@ export class EnemyEntity extends DynamicEntity {
 
     this.cooldown = this.config.attackCooldown;
     this.world.addProjectile({
-      owner: 'enemy',
-      position: this.position.clone().add(direction.clone().normalize().multiplyScalar(1.1)).setY(0.45),
+      owner: "enemy",
+      position: this.position
+        .clone()
+        .add(direction.clone().normalize().multiplyScalar(1.1))
+        .setY(0.45),
       direction,
       speed: 16,
       damage: this.config.damage,
       radius: 0.24,
       lifetime: 1.8,
-      color: '#ffb08c',
+      color: "#ffb08c"
     });
   }
 

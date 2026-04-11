@@ -1,7 +1,7 @@
 export class Hud {
   constructor() {
-    this.root = document.createElement('div');
-    this.root.className = 'hud';
+    this.root = document.createElement("div");
+    this.root.className = "hud";
     this.root.innerHTML = `
       <div class="hud__panel">
         <div class="hud__title">Core Status</div>
@@ -17,18 +17,18 @@ export class Hud {
       </div>
     `;
 
-    this.message = document.createElement('div');
-    this.message.className = 'hud__message hidden';
+    this.message = document.createElement("div");
+    this.message.className = "hud__message hidden";
 
     document.body.appendChild(this.root);
     document.body.appendChild(this.message);
 
-    this.health = this.root.querySelector('[data-health]');
-    this.multiplier = this.root.querySelector('[data-multiplier]');
-    this.wave = this.root.querySelector('[data-wave]');
-    this.score = this.root.querySelector('[data-score]');
-    this.enemies = this.root.querySelector('[data-enemies]');
-    this.state = this.root.querySelector('[data-state]');
+    this.health = this.root.querySelector("[data-health]");
+    this.multiplier = this.root.querySelector("[data-multiplier]");
+    this.wave = this.root.querySelector("[data-wave]");
+    this.score = this.root.querySelector("[data-score]");
+    this.enemies = this.root.querySelector("[data-enemies]");
+    this.state = this.root.querySelector("[data-state]");
 
     this.messageTimer = 0;
     this.stickyMessage = false;
@@ -36,25 +36,26 @@ export class Hud {
 
   setMessage(text, sticky = false) {
     this.message.textContent = text;
-    this.message.classList.remove('hidden');
+    this.message.classList.remove("hidden");
     this.messageTimer = 2.4;
     this.stickyMessage = sticky;
   }
 
   render(data, dt) {
     this.health.textContent = `${Math.max(0, Math.ceil(data.health))} / ${data.maxHealth}`;
-    this.multiplier.textContent = data.multiplier > 1
-      ? `x${data.multiplier.toFixed(1)} ${data.multiplierTimer.toFixed(1)}s`
-      : 'x1.0';
+    this.multiplier.textContent =
+      data.multiplier > 1
+        ? `x${data.multiplier.toFixed(1)} ${data.multiplierTimer.toFixed(1)}s`
+        : "x1.0";
     this.wave.textContent = `${data.wave}`;
     this.score.textContent = `${Math.floor(data.score)}`;
     this.enemies.textContent = `${data.enemies}`;
-    this.state.textContent = data.gameOver ? 'Offline' : 'Online';
+    this.state.textContent = data.gameOver ? "Offline" : "Online";
 
     if (!this.stickyMessage) {
       this.messageTimer -= dt;
       if (this.messageTimer <= 0) {
-        this.message.classList.add('hidden');
+        this.message.classList.add("hidden");
       }
     }
   }

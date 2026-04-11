@@ -1,16 +1,15 @@
-import * as THREE from 'three';
-import { Entity } from './Entity.js';
+import * as THREE from "three";
+import { Entity } from "./Entity.js";
 
 /**
- * Our DynamicEntity class will be used 
+ * Our DynamicEntity class will be used
  * for any entity that moves or changes
  */
 
 export class DynamicEntity extends Entity {
-
   constructor({
-    velocity = new THREE.Vector3(0,0,0),
-    acceleration = new THREE.Vector3(0,0,0),
+    velocity = new THREE.Vector3(0, 0, 0),
+    acceleration = new THREE.Vector3(0, 0, 0),
     topSpeed = 3,
     mass = 1,
     friction = 1.0,
@@ -18,9 +17,8 @@ export class DynamicEntity extends Entity {
 
     ...entityConfig
   } = {}) {
-
     super(entityConfig);
-    
+
     this.velocity = velocity.clone();
     this.acceleration = acceleration.clone();
     this.topSpeed = topSpeed;
@@ -33,21 +31,23 @@ export class DynamicEntity extends Entity {
   // To create a cone mesh
   createDefaultMesh(color) {
     let temp = new THREE.Mesh(
-      new THREE.ConeGeometry(this.scale.x/2, this.scale.y, 30),
-      new THREE.MeshStandardMaterial( {color: color} )
+      new THREE.ConeGeometry(this.scale.x / 2, this.scale.y, 30),
+      new THREE.MeshStandardMaterial({ color: color })
     );
 
-    temp.rotation.x = Math.PI/2;
+    temp.rotation.x = Math.PI / 2;
 
     let mesh = new THREE.Group();
     mesh.add(temp);
     return mesh;
   }
 
-  // Set the colour of our mesh 
+  // Set the colour of our mesh
   // assuming the primary mesh is at children[0]
   setColor(color) {
-    this.mesh.children[0].material = new THREE.MeshStandardMaterial({color:color});
+    this.mesh.children[0].material = new THREE.MeshStandardMaterial({
+      color: color
+    });
   }
 
   // Apply a force to our dynamic entity
@@ -56,9 +56,8 @@ export class DynamicEntity extends Entity {
     let a = force.clone().divideScalar(this.mass);
     this.acceleration.add(a);
   }
-  
+
   update(deltaTime, map) {
-    
     // Update our velocity by acceleration
     this.velocity.addScaledVector(this.acceleration, deltaTime);
 
@@ -82,9 +81,9 @@ export class DynamicEntity extends Entity {
     this.mesh.position.copy(this.position);
 
     // Set the MESH y position to be half the height of our entity
-    this.mesh.position.y += this.scale.y/2;
+    this.mesh.position.y += this.scale.y / 2;
 
     // Reset acceleration to 0 after applying forces
-    this.acceleration.set(0,0,0);
+    this.acceleration.set(0, 0, 0);
   }
 }

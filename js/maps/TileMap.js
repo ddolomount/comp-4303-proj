@@ -1,8 +1,8 @@
-import * as THREE from 'three';
-import { Tile } from './Tile.js';
-import { LevelMap } from './LevelMap.js';
-import { CaveGenerator } from '../pcg/CaveGenerator.js';
-import { TileMapRenderer } from '../renderers/TileMapRenderer.js';
+import * as THREE from "three";
+import { Tile } from "./Tile.js";
+import { LevelMap } from "./LevelMap.js";
+import { CaveGenerator } from "../pcg/CaveGenerator.js";
+import { TileMapRenderer } from "../renderers/TileMapRenderer.js";
 
 const CA_ITERATIONS = 20;
 const CA_DENSITY = 0.45;
@@ -11,7 +11,7 @@ export class TileMap extends LevelMap {
   constructor(scene, { rows = 31, cols = 31, tileSize = 3 } = {}) {
     super({
       width: cols * tileSize,
-      depth: rows * tileSize,
+      depth: rows * tileSize
     });
 
     this.scene = scene;
@@ -85,7 +85,8 @@ export class TileMap extends LevelMap {
     let bestDistance = Infinity;
 
     for (const tile of this.walkableTiles) {
-      const distance = Math.abs(tile.row - centerRow) + Math.abs(tile.col - centerCol);
+      const distance =
+        Math.abs(tile.row - centerRow) + Math.abs(tile.col - centerCol);
       if (distance < bestDistance) {
         bestDistance = distance;
         bestTile = tile;
@@ -120,7 +121,12 @@ export class TileMap extends LevelMap {
 
   getAdjacentTiles(tile) {
     const neighbours = [];
-    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    const directions = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1]
+    ];
 
     for (const [dr, dc] of directions) {
       const row = tile.row + dr;
@@ -198,12 +204,20 @@ export class TileMap extends LevelMap {
 
         const obstacle = this.localizeRowCol(row, col);
         const half = this.tileSize / 2;
-        const nearestX = THREE.MathUtils.clamp(x, obstacle.x - half, obstacle.x + half);
-        const nearestZ = THREE.MathUtils.clamp(z, obstacle.z - half, obstacle.z + half);
+        const nearestX = THREE.MathUtils.clamp(
+          x,
+          obstacle.x - half,
+          obstacle.x + half
+        );
+        const nearestZ = THREE.MathUtils.clamp(
+          z,
+          obstacle.z - half,
+          obstacle.z + half
+        );
         const distX = x - nearestX;
         const distZ = z - nearestZ;
 
-        if ((distX * distX) + (distZ * distZ) < radius * radius) {
+        if (distX * distX + distZ * distZ < radius * radius) {
           return true;
         }
       }
@@ -241,12 +255,13 @@ export class TileMap extends LevelMap {
   }
 
   getEdgeSpawnPoint(awayFrom, minDistance = 12) {
-    const candidates = this.walkableTiles.filter((tile) => (
-      tile.row <= 2 ||
-      tile.col <= 2 ||
-      tile.row >= this.rows - 3 ||
-      tile.col >= this.cols - 3
-    ));
+    const candidates = this.walkableTiles.filter(
+      (tile) =>
+        tile.row <= 2 ||
+        tile.col <= 2 ||
+        tile.row >= this.rows - 3 ||
+        tile.col >= this.cols - 3
+    );
 
     if (candidates.length === 0) {
       return this.getRandomOpenPoint(awayFrom, minDistance);
@@ -274,7 +289,9 @@ export class TileMap extends LevelMap {
 
     direction.normalize();
     for (let i = 1; i < steps; i += 1) {
-      const sample = from.clone().addScaledVector(direction, (distance / steps) * i);
+      const sample = from
+        .clone()
+        .addScaledVector(direction, (distance / steps) * i);
       if (this.collidesCircle(sample.x, sample.z, 0.35)) {
         return false;
       }
@@ -288,7 +305,9 @@ export class TileMap extends LevelMap {
       return new THREE.Vector3();
     }
 
-    const ahead = position.clone().addScaledVector(direction.clone().normalize(), lookAhead);
+    const ahead = position
+      .clone()
+      .addScaledVector(direction.clone().normalize(), lookAhead);
     if (!this.collidesCircle(ahead.x, ahead.z, 0.7)) {
       return new THREE.Vector3();
     }
@@ -297,7 +316,7 @@ export class TileMap extends LevelMap {
       new THREE.Vector3(1, 0, 0),
       new THREE.Vector3(-1, 0, 0),
       new THREE.Vector3(0, 0, 1),
-      new THREE.Vector3(0, 0, -1),
+      new THREE.Vector3(0, 0, -1)
     ];
 
     const push = new THREE.Vector3();

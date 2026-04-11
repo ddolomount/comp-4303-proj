@@ -1,8 +1,6 @@
 export class CaveGenerator {
-
   // Generate our cave grid with 1s and 0s
   static generate(map, numIterations, density, maxAttempts = 10) {
-
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       let grid = this.initGrid(map, density);
 
@@ -15,7 +13,6 @@ export class CaveGenerator {
       }
     }
     throw new Error("We could not generate a valid grid");
-  
   }
 
   // Initialize our grid with noise
@@ -44,18 +41,19 @@ export class CaveGenerator {
     // Iterate over directions of neighbours
     for (let dr = -1; dr <= 1; dr++) {
       for (let dc = -1; dc <= 1; dc++) {
-
         let nr = r + dr;
         let nc = c + dc;
 
         // If it is the center tile/index ignore
         if (dr === 0 && dc === 0) continue;
 
-       // Count
+        // Count
         if (
           // Option 2: if cell is out of bounds, consider it an obstacle
-          nr < 0 || nr >= rows ||
-          nc < 0 || nc >= cols ||
+          nr < 0 ||
+          nr >= rows ||
+          nc < 0 ||
+          nc >= cols ||
           // If cell is 1, increase count
           grid[nr][nc] === 1
         ) {
@@ -66,7 +64,6 @@ export class CaveGenerator {
     return count;
   }
 
-
   // Apply one iteration of CA
   static applyCA(grid) {
     let nextGrid = [];
@@ -75,7 +72,6 @@ export class CaveGenerator {
       let row = [];
 
       for (let c = 0; c < grid[0].length; c++) {
-
         let newCell;
 
         // Option 1: set all border cells to obstacles
@@ -96,12 +92,11 @@ export class CaveGenerator {
         else newCell = grid[r][c];
 
         // }
-      row.push(newCell);
+        row.push(newCell);
       }
       nextGrid.push(row);
     }
     return nextGrid;
-
   }
 
   // Validate to ensure all open cells are connected
@@ -133,23 +128,31 @@ export class CaveGenerator {
     visited.add(start[0] * cols + start[1]);
 
     while (queue.length > 0) {
-
       let [r, c] = queue.shift();
-    
-      for (let [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+
+      for (let [dr, dc] of [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1]
+      ]) {
         let nr = r + dr;
         let nc = c + dc;
 
-        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols &&
-          grid[nr][nc] === 0 && !visited.has(nr * cols + nc)) {
-
-            visited.add(nr * cols + nc);
-            queue.push([nr, nc]);
+        if (
+          nr >= 0 &&
+          nr < rows &&
+          nc >= 0 &&
+          nc < cols &&
+          grid[nr][nc] === 0 &&
+          !visited.has(nr * cols + nc)
+        ) {
+          visited.add(nr * cols + nc);
+          queue.push([nr, nc]);
         }
       }
     }
 
     return visited.size === total;
   }
-
-}                  
+}

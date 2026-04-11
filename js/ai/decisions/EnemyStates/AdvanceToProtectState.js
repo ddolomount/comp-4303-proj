@@ -1,9 +1,9 @@
-import * as THREE from 'three';
-import { State } from '../State.js';
-import { PatrolState } from './PatrolState.js';
-import { SteeringBehaviours } from '../../steering/SteeringBehaviours.js';
-import { GroupSteeringBehaviours } from '../../steering/GroupSteeringBehaviours.js';
-import { CollisionAvoidWhiskers } from '../../steering/CollisionAvoidWhiskers.js';
+import * as THREE from "three";
+import { State } from "../State.js";
+import { PatrolState } from "./PatrolState.js";
+import { SteeringBehaviours } from "../../steering/SteeringBehaviours.js";
+import { GroupSteeringBehaviours } from "../../steering/GroupSteeringBehaviours.js";
+import { CollisionAvoidWhiskers } from "../../steering/CollisionAvoidWhiskers.js";
 
 const WAYPOINT_REACHED_DISTANCE = 0.8;
 
@@ -25,10 +25,16 @@ export class AdvanceToProtectState extends State {
       return;
     }
 
-    entity.protectRepathTimer = Math.max(0, (entity.protectRepathTimer ?? 0) - dt);
-    const distanceToObjective = entity.position.distanceTo(protectEntity.position);
+    entity.protectRepathTimer = Math.max(
+      0,
+      (entity.protectRepathTimer ?? 0) - dt
+    );
+    const distanceToObjective = entity.position.distanceTo(
+      protectEntity.position
+    );
     const contactRange = protectEntity.radius + entity.radius + 0.35;
-    const rangedCanAttack = entity.variant === 'ranged' &&
+    const rangedCanAttack =
+      entity.variant === "ranged" &&
       distanceToObjective <= entity.attackRange &&
       entity.world.map.hasLineOfSight(entity.position, protectEntity.position);
 
@@ -38,7 +44,7 @@ export class AdvanceToProtectState extends State {
       return;
     }
 
-    if (entity.variant !== 'ranged' && distanceToObjective <= contactRange) {
+    if (entity.variant !== "ranged" && distanceToObjective <= contactRange) {
       entity.velocity.multiplyScalar(0.35);
       entity.touchProtectObjective();
       return;
@@ -55,9 +61,10 @@ export class AdvanceToProtectState extends State {
     }
 
     const waypoint = this.getCurrentWaypoint(entity);
-    const finalStandOff = entity.variant === 'ranged' && distanceToObjective > entity.attackRange
-      ? Math.max(contactRange, entity.attackRange * 0.85)
-      : contactRange + 0.4;
+    const finalStandOff =
+      entity.variant === "ranged" && distanceToObjective > entity.attackRange
+        ? Math.max(contactRange, entity.attackRange * 0.85)
+        : contactRange + 0.4;
     const isAtObjective = distanceToObjective <= finalStandOff;
     const steer = new THREE.Vector3();
 
@@ -71,26 +78,45 @@ export class AdvanceToProtectState extends State {
         ).multiplyScalar(1.25)
       );
     } else {
-      const isFinalWaypoint = entity.protectPathIndex >= entity.protectPath.length - 1;
+      const isFinalWaypoint =
+        entity.protectPathIndex >= entity.protectPath.length - 1;
       const targetPoint = isFinalWaypoint ? protectEntity.position : waypoint;
       const targetRadius = isFinalWaypoint ? finalStandOff + 1.8 : 1.35;
       const stopRadius = isFinalWaypoint ? finalStandOff : 0.2;
       steer.add(
-        SteeringBehaviours.arrive(entity, targetPoint, targetRadius, stopRadius).multiplyScalar(1.2)
+        SteeringBehaviours.arrive(
+          entity,
+          targetPoint,
+          targetRadius,
+          stopRadius
+        ).multiplyScalar(1.2)
       );
     }
 
-    steer.add(GroupSteeringBehaviours.flock(entity, entity.world.enemies.filter((other) => other.alive), {
-      separationRadius: 2.3,
-      separationWeight: 1.1,
-      alignmentRadius: 3.8,
-      alignmentWeight: 0.08,
-      cohesionRadius: 4.5,
-      cohesionWeight: 0.03,
-    }));
     steer.add(
-      CollisionAvoidWhiskers.whiskers(entity, entity.world.map, 2.8, 2.2, Math.PI / 4, 2, entity.maxForce)
-        .multiplyScalar(0.95)
+      GroupSteeringBehaviours.flock(
+        entity,
+        entity.world.enemies.filter((other) => other.alive),
+        {
+          separationRadius: 2.3,
+          separationWeight: 1.1,
+          alignmentRadius: 3.8,
+          alignmentWeight: 0.08,
+          cohesionRadius: 4.5,
+          cohesionWeight: 0.03
+        }
+      )
+    );
+    steer.add(
+      CollisionAvoidWhiskers.whiskers(
+        entity,
+        entity.world.map,
+        2.8,
+        2.2,
+        Math.PI / 4,
+        2,
+        entity.maxForce
+      ).multiplyScalar(0.95)
     );
     entity.applyForce(steer);
   }

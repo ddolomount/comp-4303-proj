@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 const PROJECTILE_LENGTH_MULTIPLIER = 4.6;
 const PROJECTILE_GLOW_MULTIPLIER = 0.75;
@@ -8,7 +8,10 @@ const PROJECTILE_BACK_CAP_MULTIPLIER = 0.42;
 const FORWARD_AXIS = new THREE.Vector3(0, 0, 1);
 
 export class ProjectileEntity {
-  constructor(scene, { owner, position, direction, speed, damage, radius, lifetime, color }) {
+  constructor(
+    scene,
+    { owner, position, direction, speed, damage, radius, lifetime, color }
+  ) {
     this.owner = owner;
     this.position = position.clone();
     this.velocity = direction.clone().normalize().multiplyScalar(speed);
@@ -23,27 +26,39 @@ export class ProjectileEntity {
     this.mesh = new THREE.Group();
 
     const glow = new THREE.Mesh(
-      new THREE.CylinderGeometry(glowRadius, glowRadius, boltLength * 1.15, 14, 1, true),
+      new THREE.CylinderGeometry(
+        glowRadius,
+        glowRadius,
+        boltLength * 1.15,
+        14,
+        1,
+        true
+      ),
       new THREE.MeshBasicMaterial({
         color,
         transparent: true,
         opacity: 0.28,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
-        side: THREE.DoubleSide,
+        side: THREE.DoubleSide
       })
     );
     glow.rotation.x = Math.PI / 2;
     this.mesh.add(glow);
 
     const core = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius * PROJECTILE_CORE_MULTIPLIER, radius * PROJECTILE_CORE_MULTIPLIER, boltLength, 14),
+      new THREE.CylinderGeometry(
+        radius * PROJECTILE_CORE_MULTIPLIER,
+        radius * PROJECTILE_CORE_MULTIPLIER,
+        boltLength,
+        14
+      ),
       new THREE.MeshStandardMaterial({
-        color: '#ffffff',
+        color: "#ffffff",
         emissive: color,
         emissiveIntensity: 1.8,
         metalness: 0.05,
-        roughness: 0.12,
+        roughness: 0.12
       })
     );
     core.rotation.x = Math.PI / 2;
@@ -51,11 +66,15 @@ export class ProjectileEntity {
     this.mesh.add(core);
 
     const frontCap = new THREE.Mesh(
-      new THREE.SphereGeometry(radius * PROJECTILE_FRONT_CAP_MULTIPLIER, 12, 12),
+      new THREE.SphereGeometry(
+        radius * PROJECTILE_FRONT_CAP_MULTIPLIER,
+        12,
+        12
+      ),
       new THREE.MeshBasicMaterial({
         color,
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.9
       })
     );
     frontCap.position.z = boltLength * 0.5;
@@ -66,7 +85,7 @@ export class ProjectileEntity {
       new THREE.MeshBasicMaterial({
         color,
         transparent: true,
-        opacity: 0.45,
+        opacity: 0.45
       })
     );
     backCap.position.z = -boltLength * 0.35;

@@ -1,4 +1,4 @@
-import { State } from './State.js';
+import { State } from "./State.js";
 
 export class PatrolState extends State {
   enter(enemy) {
@@ -55,7 +55,7 @@ export class AttackState extends State {
     const player = enemy.world.player;
     const distance = enemy.position.distanceTo(player.position);
 
-    if (enemy.variant === 'melee') {
+    if (enemy.variant === "melee") {
       enemy.pursuePlayer(1.1);
       if (distance > enemy.attackRange + 1.4) {
         enemy.stateMachine.change(new ChaseState());
@@ -73,7 +73,10 @@ export class AttackState extends State {
     }
     enemy.desiredVelocity.copy(desired);
 
-    if (!enemy.world.map.hasLineOfSight(enemy.position, player.position) || distance > enemy.attackRange + 3) {
+    if (
+      !enemy.world.map.hasLineOfSight(enemy.position, player.position) ||
+      distance > enemy.attackRange + 3
+    ) {
       enemy.stateMachine.change(new ChaseState());
       return;
     }

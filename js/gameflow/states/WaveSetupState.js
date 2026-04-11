@@ -1,6 +1,6 @@
-import { State } from '../../ai/decisions/State.js';
-import { CombatState } from './CombatState.js';
-import { ProtectState } from './ProtectState.js';
+import { State } from "../../ai/decisions/State.js";
+import { CombatState } from "./CombatState.js";
+import { ProtectState } from "./ProtectState.js";
 
 export class WaveSetupState extends State {
   enter(world) {
@@ -8,7 +8,7 @@ export class WaveSetupState extends State {
     world.pendingWaveTimer = 0;
     world.arenaRegenerated = false;
     world.currentWaveConfig = world.waveDirector.getWaveConfig(world.wave);
-    
+
     world.clearTransientObjects();
 
     if (world.map) {
@@ -17,7 +17,7 @@ export class WaveSetupState extends State {
 
     if (world.player && world.map) {
       world.player.setPosition(world.map.center.x, world.map.center.z);
-      if (typeof world.player.syncVisuals === 'function') {
+      if (typeof world.player.syncVisuals === "function") {
         world.player.syncVisuals();
       }
     }
@@ -27,14 +27,15 @@ export class WaveSetupState extends State {
     world.spawnWavePickups();
 
     if (world.hud) {
-      const label = world.currentWaveConfig.type === 'protect'
-        ? `Protect Wave ${world.wave}`
-        : `Wave ${world.wave}`;
+      const label =
+        world.currentWaveConfig.type === "protect"
+          ? `Protect Wave ${world.wave}`
+          : `Wave ${world.wave}`;
       world.hud.setMessage(label);
     }
 
     if (world.gameStateMachine) {
-      if (world.currentWaveConfig.type === 'protect') {
+      if (world.currentWaveConfig.type === "protect") {
         world.gameStateMachine.change(new ProtectState());
       } else {
         world.gameStateMachine.change(new CombatState());

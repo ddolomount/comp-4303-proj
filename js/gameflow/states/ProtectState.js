@@ -1,7 +1,7 @@
-import { State } from '../../ai/decisions/State.js';
-import { AdvanceToProtectState } from '../../ai/decisions/EnemyStates/AdvanceToProtectState.js';
-import { GameOverState } from './GameOverState.js';
-import { IntermissionState } from './IntermissionState.js';
+import { State } from "../../ai/decisions/State.js";
+import { AdvanceToProtectState } from "../../ai/decisions/EnemyStates/AdvanceToProtectState.js";
+import { GameOverState } from "./GameOverState.js";
+import { IntermissionState } from "./IntermissionState.js";
 
 export class ProtectState extends State {
   enter(world) {
@@ -41,7 +41,9 @@ export class ProtectState extends State {
     }
 
     if (!world.protectEntity || world.protectEntity.health <= 0) {
-      world.gameStateMachine.change(new GameOverState('Objective destroyed - press R to restart'));
+      world.gameStateMachine.change(
+        new GameOverState("Objective destroyed - press R to restart")
+      );
       return;
     }
 

@@ -1,6 +1,5 @@
 // Tile class, which is our nodes
 export class Tile {
-
   // Possible tile types
   static Type = Object.freeze({
     Ground: Symbol("Ground"),
@@ -33,5 +32,4 @@ export class Tile {
   isWalkable() {
     return this.type !== Tile.Type.Obstacle;
   }
-
 }

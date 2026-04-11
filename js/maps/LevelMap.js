@@ -1,40 +1,31 @@
-import * as THREE from 'three';
+import * as THREE from "three";
 
 // LevelMap holds our bounds of the map
 export class LevelMap {
-  
-  constructor({
-    width = 100,
-    depth = 100
-  } = {}) {
-
+  constructor({ width = 100, depth = 100 } = {}) {
     this.width = width;
     this.depth = depth;
-  
-    this.minX = -width/2;
-    this.maxX = width/2;
 
-    this.minZ = -depth/2;
-    this.maxZ = depth/2;
-  
+    this.minX = -width / 2;
+    this.maxX = width / 2;
+
+    this.minZ = -depth / 2;
+    this.maxZ = depth / 2;
   }
 
   // Method for wrapping!
   wrapPosition(position) {
-    
     let wrapped = position.clone();
 
     // x component
-    wrapped.x = THREE.MathUtils.euclideanModulo(
-      wrapped.x - this.minX,
-      this.width
-    ) + this.minX;
+    wrapped.x =
+      THREE.MathUtils.euclideanModulo(wrapped.x - this.minX, this.width) +
+      this.minX;
 
     // z component
-    wrapped.z = THREE.MathUtils.euclideanModulo(
-      wrapped.z - this.minZ,
-      this.depth
-    ) + this.minZ;
+    wrapped.z =
+      THREE.MathUtils.euclideanModulo(wrapped.z - this.minZ, this.depth) +
+      this.minZ;
 
     return wrapped;
   }
@@ -47,5 +38,4 @@ export class LevelMap {
       this.minZ + this.depth * Math.random()
     );
   }
-
 }

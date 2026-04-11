@@ -1,24 +1,27 @@
-import * as THREE from 'three';
-import { Entity } from './Entity.js';
-import { createModelInstance, pickDefaultAnimationClip } from '../loaders/ModelUtils.js';
+import * as THREE from "three";
+import { Entity } from "./Entity.js";
+import {
+  createModelInstance,
+  pickDefaultAnimationClip
+} from "../loaders/ModelUtils.js";
 
 const PICKUP_CONFIG = {
   health: {
-    color: '#ff7f73',
-    emissive: '#ff6a5d',
+    color: "#ff7f73",
+    emissive: "#ff6a5d",
     modelHeight: 0.72,
     apply(player) {
       player.heal(28);
-    },
+    }
   },
   multiplier: {
-    color: '#ffd84f',
-    emissive: '#ffd84f',
+    color: "#ffd84f",
+    emissive: "#ffd84f",
     modelHeight: 1.45,
     apply(player) {
       player.addMultiplier(12);
-    },
-  },
+    }
+  }
 };
 
 export class PickupEntity extends Entity {
@@ -30,7 +33,7 @@ export class PickupEntity extends Entity {
     super({
       position: basePosition,
       scale: new THREE.Vector3(1.4, 1.4, 1.4),
-      mesh,
+      mesh
     });
 
     this.scene = scene;
@@ -52,7 +55,7 @@ export class PickupEntity extends Entity {
     const group = new THREE.Group();
 
     const { model, clips } = createModelInstance(modelTemplate, {
-      targetHeight: config.modelHeight ?? 1.05,
+      targetHeight: config.modelHeight ?? 1.05
     });
     if (model) {
       if (config === PICKUP_CONFIG.multiplier) {
@@ -69,7 +72,7 @@ export class PickupEntity extends Entity {
         emissive: config.emissive,
         emissiveIntensity: 0.55,
         metalness: 0.2,
-        roughness: 0.3,
+        roughness: 0.3
       })
     );
     mesh.castShadow = true;
@@ -86,14 +89,21 @@ export class PickupEntity extends Entity {
 
     this.animationMixer = new THREE.AnimationMixer(this.mesh);
     for (const clip of clips) {
-      this.animationActions.set(clip.name, this.animationMixer.clipAction(clip));
+      this.animationActions.set(
+        clip.name,
+        this.animationMixer.clipAction(clip)
+      );
     }
 
     this.playAnimation(pickDefaultAnimationClip(clips)?.name);
   }
 
   playAnimation(name) {
-    if (!name || !this.animationActions.has(name) || this.activeAnimation === name) {
+    if (
+      !name ||
+      !this.animationActions.has(name) ||
+      this.activeAnimation === name
+    ) {
       return;
     }
 

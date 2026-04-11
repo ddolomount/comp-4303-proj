@@ -1,15 +1,15 @@
-import * as THREE from 'three';
-import { SteeringBehaviours } from './SteeringBehaviours.js';
+import * as THREE from "three";
+import { SteeringBehaviours } from "./SteeringBehaviours.js";
 
 export class CollisionAvoidWhiskers {
   static whiskers(
     entity,
     map,
-    lookAhead = 3.2,
-    howFar = 2.4,
-    whiskerAngle = Math.PI / 4,
-    whiskerLength = 2.2,
-    maxForce = entity.maxForce ?? 15,
+    lookAhead,
+    howFar,
+    whiskerAngle,
+    whiskerLength,
+    maxForce,
     debug = null
   ) {
     const steer = new THREE.Vector3();
@@ -19,13 +19,20 @@ export class CollisionAvoidWhiskers {
     }
 
     const start = entity.position.clone();
-    const leftDir = forward.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), whiskerAngle);
-    const rightDir = forward.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -whiskerAngle);
+    const leftDir = forward
+      .clone()
+      .applyAxisAngle(new THREE.Vector3(0, 1, 0), whiskerAngle);
+    const rightDir = forward
+      .clone()
+      .applyAxisAngle(new THREE.Vector3(0, 1, 0), -whiskerAngle);
+    const speedScale = this.getSpeedScale(entity);
+    const scaledLookAhead = lookAhead * speedScale;
+    const scaledWhiskerLength = whiskerLength * speedScale;
 
     const rays = [
-      { name: 'center', dir: forward, len: lookAhead, weight: 1.2 },
-      { name: 'left', dir: leftDir, len: whiskerLength, weight: 0.85 },
-      { name: 'right', dir: rightDir, len: whiskerLength, weight: 0.85 },
+      { name: "center", dir: forward, len: scaledLookAhead, weight: 1.2 },
+      { name: "left", dir: leftDir, len: scaledWhiskerLength, weight: 0.85 },
+      { name: "right", dir: rightDir, len: scaledWhiskerLength, weight: 0.85 }
     ];
 
     for (const ray of rays) {
@@ -36,13 +43,28 @@ export class CollisionAvoidWhiskers {
         continue;
       }
 
-      let target = hit.collisionPoint.clone().addScaledVector(hit.normal, howFar);
-      let force = SteeringBehaviours.seek(entity, target).multiplyScalar(ray.weight);
+      let target = hit.collisionPoint
+        .clone()
+        .addScaledVector(hit.normal, howFar);
+      let force = SteeringBehaviours.seek(entity, target).multiplyScalar(
+        ray.weight
+      );
       steer.add(force);
     }
 
     steer.clampLength(0, maxForce);
     return steer;
+  }
+
+  static getSpeedScale(entity) {
+    const speed = entity.velocity?.length?.() ?? 0;
+    const topSpeed = entity.topSpeed ?? speed;
+    if (topSpeed <= 0) {
+      return 0;
+    }
+
+    const speedRatio = THREE.MathUtils.clamp(speed / topSpeed, 0, 1);
+    return THREE.MathUtils.lerp(0.2, 1, speedRatio);
   }
 
   static getForward(entity) {
@@ -68,11 +90,16 @@ export class CollisionAvoidWhiskers {
       return null;
     }
 
-    const steps = Math.max(4, Math.ceil(distance / Math.max(0.2, map.tileSize * 0.2)));
+    const steps = Math.max(
+      4,
+      Math.ceil(distance / Math.max(0.2, map.tileSize * 0.2))
+    );
     direction.normalize();
 
     for (let i = 1; i <= steps; i += 1) {
-      const sample = start.clone().addScaledVector(direction, (distance / steps) * i);
+      const sample = start
+        .clone()
+        .addScaledVector(direction, (distance / steps) * i);
       if (!map.collidesCircle(sample.x, sample.z, radius)) {
         continue;
       }
@@ -104,9 +131,17 @@ export class CollisionAvoidWhiskers {
         const wallCenter = map.localizeRowCol(testRow, testCol);
         const half = map.tileSize / 2;
         const nearestPoint = new THREE.Vector3(
-          THREE.MathUtils.clamp(point.x, wallCenter.x - half, wallCenter.x + half),
+          THREE.MathUtils.clamp(
+            point.x,
+            wallCenter.x - half,
+            wallCenter.x + half
+          ),
           0,
-          THREE.MathUtils.clamp(point.z, wallCenter.z - half, wallCenter.z + half)
+          THREE.MathUtils.clamp(
+            point.z,
+            wallCenter.z - half,
+            wallCenter.z + half
+          )
         );
 
         const distanceSq = nearestPoint.distanceToSquared(point);
@@ -126,7 +161,7 @@ export class CollisionAvoidWhiskers {
         best = {
           collisionPoint: nearestPoint,
           normal,
-          wallCenter,
+          wallCenter
         };
         bestDistanceSq = distanceSq;
       }
@@ -134,5 +169,4 @@ export class CollisionAvoidWhiskers {
 
     return best;
   }
-
 }

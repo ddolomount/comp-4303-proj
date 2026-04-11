@@ -1,18 +1,18 @@
-import { State } from '../../ai/decisions/State.js';
-import { WaveSetupState } from './WaveSetupState.js';
+import { State } from "../../ai/decisions/State.js";
+import { WaveSetupState } from "./WaveSetupState.js";
 
 export class IntermissionState extends State {
   enter(world) {
     world.pendingWaveTimer = 0;
     world.arenaRegenerated = false;
-    world.hud.setMessage('Wave cleared');
+    world.hud.setMessage("Wave cleared");
   }
 
   update(world, dt) {
     world.pendingWaveTimer += dt;
 
     if (!world.arenaRegenerated && world.pendingWaveTimer > 1.2) {
-      world.hud.setMessage('Map rerouting');
+      world.hud.setMessage("Map rerouting");
       world.arenaRegenerated = true;
     }
 

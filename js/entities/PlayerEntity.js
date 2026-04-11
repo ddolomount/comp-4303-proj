@@ -1,6 +1,9 @@
-import * as THREE from 'three';
-import { Entity } from './Entity.js';
-import { createModelInstance, pickDefaultAnimationClip } from '../loaders/ModelUtils.js';
+import * as THREE from "three";
+import { Entity } from "./Entity.js";
+import {
+  createModelInstance,
+  pickDefaultAnimationClip
+} from "../loaders/ModelUtils.js";
 
 const PLAYER_HEIGHT = 1.45;
 const PLAYER_RADIUS = 0.78;
@@ -11,7 +14,7 @@ export class PlayerEntity extends Entity {
     super({
       position: new THREE.Vector3(),
       scale: new THREE.Vector3(2, PLAYER_HEIGHT, 2),
-      mesh,
+      mesh
     });
 
     this.scene = scene;
@@ -39,7 +42,7 @@ export class PlayerEntity extends Entity {
 
     const { model, clips } = createModelInstance(modelTemplate, {
       targetHeight: PLAYER_HEIGHT,
-      yaw: -Math.PI / 2,
+      yaw: -Math.PI / 2
     });
     if (model) {
       group.add(model);
@@ -49,11 +52,11 @@ export class PlayerEntity extends Entity {
     const body = new THREE.Mesh(
       new THREE.CylinderGeometry(0.7, 0.9, PLAYER_HEIGHT, 20),
       new THREE.MeshStandardMaterial({
-        color: '#a8fff0',
-        emissive: '#35ffc7',
+        color: "#a8fff0",
+        emissive: "#35ffc7",
         emissiveIntensity: 0.4,
         metalness: 0.28,
-        roughness: 0.35,
+        roughness: 0.35
       })
     );
     body.castShadow = true;
@@ -62,11 +65,11 @@ export class PlayerEntity extends Entity {
     const barrel = new THREE.Mesh(
       new THREE.BoxGeometry(0.32, 0.24, 1.35),
       new THREE.MeshStandardMaterial({
-        color: '#0d1e1c',
-        emissive: '#58ffd4',
+        color: "#0d1e1c",
+        emissive: "#58ffd4",
         emissiveIntensity: 0.26,
         metalness: 0.45,
-        roughness: 0.25,
+        roughness: 0.25
       })
     );
     barrel.position.set(0, 0.4, 0.8);
@@ -84,14 +87,21 @@ export class PlayerEntity extends Entity {
 
     this.animationMixer = new THREE.AnimationMixer(this.group);
     for (const clip of clips) {
-      this.animationActions.set(clip.name, this.animationMixer.clipAction(clip));
+      this.animationActions.set(
+        clip.name,
+        this.animationMixer.clipAction(clip)
+      );
     }
 
     this.playAnimation(pickDefaultAnimationClip(clips)?.name);
   }
 
   playAnimation(name) {
-    if (!name || !this.animationActions.has(name) || this.activeAnimation === name) {
+    if (
+      !name ||
+      !this.animationActions.has(name) ||
+      this.activeAnimation === name
+    ) {
       return;
     }
 
@@ -175,7 +185,9 @@ export class PlayerEntity extends Entity {
 
     const movement = input.getMovementVector().multiplyScalar(this.speed);
     this.velocity.copy(movement);
-    this.position.copy(world.map.moveWithCollisions(this.position, movement, this.radius, dt));
+    this.position.copy(
+      world.map.moveWithCollisions(this.position, movement, this.radius, dt)
+    );
 
     const aim = input.pointerWorld.clone().sub(this.position);
     aim.y = 0;
@@ -186,14 +198,17 @@ export class PlayerEntity extends Entity {
     if (input.mouseDown && this.fireCooldown === 0) {
       this.fireCooldown = this.fireRate;
       world.addProjectile({
-        owner: 'player',
-        position: this.position.clone().addScaledVector(this.aimDirection, 1.2).setY(0.5),
+        owner: "player",
+        position: this.position
+          .clone()
+          .addScaledVector(this.aimDirection, 1.2)
+          .setY(0.5),
         direction: this.aimDirection.clone(),
         speed: 28,
         damage: 22,
         radius: 0.22,
         lifetime: 1.2,
-        color: '#73ffe1',
+        color: "#73ffe1"
       });
     }
 
@@ -201,7 +216,11 @@ export class PlayerEntity extends Entity {
   }
 
   syncVisuals() {
-    this.group.position.set(this.position.x, PLAYER_HEIGHT / 2, this.position.z);
+    this.group.position.set(
+      this.position.x,
+      PLAYER_HEIGHT / 2,
+      this.position.z
+    );
     const yaw = Math.atan2(this.aimDirection.x, this.aimDirection.z);
     this.group.rotation.y = yaw;
   }

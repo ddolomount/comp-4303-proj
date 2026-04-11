@@ -1,8 +1,8 @@
-import * as THREE from 'three';
-import { Tile } from '../maps/Tile.js';
+import * as THREE from "three";
+import { Tile } from "../maps/Tile.js";
 
 const FLOOR_Y = -0.5;
-const GRID_LINE_COLOR = '#1fffc3';
+const GRID_LINE_COLOR = "#1fffc3";
 const OBSTACLE_BASE_Y = 0.045;
 const OBSTACLE_GLOW_Y = 0.055;
 const WALL_MODEL_FOOTPRINT = 0.86;
@@ -10,7 +10,6 @@ const WALL_MODEL_HEIGHT = 0.95;
 
 // Tile map renderer
 export class TileMapRenderer {
-
   // Constructor takes in a tile map
   constructor(tileMap, obstacleModelPack = null) {
     this.map = tileMap;
@@ -52,11 +51,11 @@ export class TileMapRenderer {
     const floor = new THREE.Mesh(
       new THREE.BoxGeometry(this.map.width, 1, this.map.depth),
       new THREE.MeshStandardMaterial({
-        color: '#0a1a17',
-        emissive: '#0d3a30',
+        color: "#0a1a17",
+        emissive: "#0d3a30",
         emissiveIntensity: 0.35,
         metalness: 0.25,
-        roughness: 0.92,
+        roughness: 0.92
       })
     );
     floor.position.set(0, FLOOR_Y, 0);
@@ -69,14 +68,14 @@ export class TileMapRenderer {
     const material = new THREE.LineBasicMaterial({
       color: GRID_LINE_COLOR,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.22
     });
 
     for (let c = 0; c <= this.map.cols; c++) {
       const x = this.map.minX + c * this.map.tileSize;
       const geometry = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(x, 0.02, this.map.minZ),
-        new THREE.Vector3(x, 0.02, this.map.maxZ),
+        new THREE.Vector3(x, 0.02, this.map.maxZ)
       ]);
       group.add(new THREE.Line(geometry, material));
     }
@@ -85,7 +84,7 @@ export class TileMapRenderer {
       const z = this.map.minZ + r * this.map.tileSize;
       const geometry = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(this.map.minX, 0.02, z),
-        new THREE.Vector3(this.map.maxX, 0.02, z),
+        new THREE.Vector3(this.map.maxX, 0.02, z)
       ]);
       group.add(new THREE.Line(geometry, material));
     }
@@ -125,7 +124,7 @@ export class TileMapRenderer {
           variantBounds.union(geometry.boundingBox);
           parts.push({
             geometry,
-            material: this.cloneMaterial(child.material),
+            material: this.cloneMaterial(child.material)
           });
         });
       }
@@ -150,7 +149,7 @@ export class TileMapRenderer {
       variantBounds.getSize(size);
       variants.push({
         parts,
-        size,
+        size
       });
     }
 
@@ -158,27 +157,32 @@ export class TileMapRenderer {
   }
 
   getObstacleElementRoots(source) {
-    const root = source.getObjectByName('GLTF_SceneRootNode') ?? this.findElementRoot(source);
+    const root =
+      source.getObjectByName("GLTF_SceneRootNode") ??
+      this.findElementRoot(source);
     const candidates = root.children.length > 0 ? root.children : [root];
     return candidates.filter((child) => this.containsMesh(child));
   }
 
   getObstacleElementGroups(elementRoots) {
-    const electronicPackGroups = this.getElectronicPackElementGroups(elementRoots);
+    const electronicPackGroups =
+      this.getElectronicPackElementGroups(elementRoots);
     if (electronicPackGroups) {
       return electronicPackGroups;
     }
 
-    return this.clusterObstacleElements(elementRoots).map((cluster) => cluster.roots);
+    return this.clusterObstacleElements(elementRoots).map(
+      (cluster) => cluster.roots
+    );
   }
 
   getElectronicPackElementGroups(elementRoots) {
-    const firstName = elementRoots[0]?.name ?? '';
-    const lastName = elementRoots[elementRoots.length - 1]?.name ?? '';
+    const firstName = elementRoots[0]?.name ?? "";
+    const lastName = elementRoots[elementRoots.length - 1]?.name ?? "";
     if (
       elementRoots.length !== 81 ||
-      !firstName.startsWith('anode') ||
-      !lastName.startsWith('Plane020')
+      !firstName.startsWith("anode") ||
+      !lastName.startsWith("Plane020")
     ) {
       return null;
     }
@@ -188,14 +192,11 @@ export class TileMapRenderer {
       elementRoots.slice(6, 13),
       elementRoots.slice(13, 23),
       elementRoots.slice(23, 33),
-      [
-        ...elementRoots.slice(33, 36),
-        ...elementRoots.slice(63, 81),
-      ],
+      [...elementRoots.slice(33, 36), ...elementRoots.slice(63, 81)],
       elementRoots.slice(36, 43),
       elementRoots.slice(43, 49),
       elementRoots.slice(49, 56),
-      elementRoots.slice(56, 63),
+      elementRoots.slice(56, 63)
     ];
   }
 
@@ -231,11 +232,13 @@ export class TileMapRenderer {
         continue;
       }
 
-      let cluster = clusters.find((candidate) => this.boundsOverlap(candidate.bounds, bounds));
+      let cluster = clusters.find((candidate) =>
+        this.boundsOverlap(candidate.bounds, bounds)
+      );
       if (!cluster) {
         cluster = {
           bounds: bounds.clone(),
-          roots: [],
+          roots: []
         };
         clusters.push(cluster);
       }
@@ -285,13 +288,16 @@ export class TileMapRenderer {
       return material.map((item) => item.clone());
     }
 
-    return material?.clone?.() ?? new THREE.MeshStandardMaterial({
-      color: '#12312a',
-      emissive: '#1fffc3',
-      emissiveIntensity: 0.2,
-      metalness: 0.2,
-      roughness: 0.5,
-    });
+    return (
+      material?.clone?.() ??
+      new THREE.MeshStandardMaterial({
+        color: "#12312a",
+        emissive: "#1fffc3",
+        emissiveIntensity: 0.2,
+        metalness: 0.2,
+        roughness: 0.5
+      })
+    );
   }
 
   disposeMaterial(material) {
@@ -318,21 +324,33 @@ export class TileMapRenderer {
           continue;
         }
 
-        const variantIndex = this.pickVariantIndex(tile, this.obstacleVariants.length);
+        const variantIndex = this.pickVariantIndex(
+          tile,
+          this.obstacleVariants.length
+        );
         if (!variantMatrices.has(variantIndex)) {
           variantMatrices.set(variantIndex, []);
         }
 
-        variantMatrices.get(variantIndex).push(
-          this.getModelTileTransformation(tile, this.obstacleVariants[variantIndex])
-        );
+        variantMatrices
+          .get(variantIndex)
+          .push(
+            this.getModelTileTransformation(
+              tile,
+              this.obstacleVariants[variantIndex]
+            )
+          );
       }
     }
 
     for (const [variantIndex, matrices] of variantMatrices.entries()) {
       const variant = this.obstacleVariants[variantIndex];
       for (const part of variant.parts) {
-        const mesh = new THREE.InstancedMesh(part.geometry, part.material, matrices.length);
+        const mesh = new THREE.InstancedMesh(
+          part.geometry,
+          part.material,
+          matrices.length
+        );
         mesh.castShadow = true;
         mesh.receiveShadow = true;
 
@@ -357,31 +375,34 @@ export class TileMapRenderer {
     const baseMesh = new THREE.InstancedMesh(
       new THREE.PlaneGeometry(1, 1),
       new THREE.MeshStandardMaterial({
-        color: '#06110f',
-        emissive: '#18ffd0',
+        color: "#06110f",
+        emissive: "#18ffd0",
         emissiveIntensity: 0.12,
         metalness: 0.25,
         roughness: 0.7,
         transparent: true,
         opacity: 0.88,
-        side: THREE.DoubleSide,
+        side: THREE.DoubleSide
       }),
       this.obstacleCount
     );
     const glowMesh = new THREE.InstancedMesh(
       new THREE.PlaneGeometry(1, 1),
       new THREE.MeshBasicMaterial({
-        color: '#36ffd8',
+        color: "#36ffd8",
         transparent: true,
         opacity: 0.2,
         depthWrite: false,
-        side: THREE.DoubleSide,
+        side: THREE.DoubleSide
       }),
       this.obstacleCount
     );
     const baseMatrix = new THREE.Matrix4();
     const glowMatrix = new THREE.Matrix4();
-    const rotation = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+    const rotation = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(1, 0, 0),
+      -Math.PI / 2
+    );
     let index = 0;
 
     for (let r = 0; r < this.map.rows; r += 1) {
@@ -395,12 +416,20 @@ export class TileMapRenderer {
         baseMatrix.compose(
           new THREE.Vector3(pos.x, OBSTACLE_BASE_Y, pos.z),
           rotation,
-          new THREE.Vector3(this.map.tileSize * 0.86, this.map.tileSize * 0.86, 1)
+          new THREE.Vector3(
+            this.map.tileSize * 0.86,
+            this.map.tileSize * 0.86,
+            1
+          )
         );
         glowMatrix.compose(
           new THREE.Vector3(pos.x, OBSTACLE_GLOW_Y, pos.z),
           rotation,
-          new THREE.Vector3(this.map.tileSize * 1.08, this.map.tileSize * 1.08, 1)
+          new THREE.Vector3(
+            this.map.tileSize * 1.08,
+            this.map.tileSize * 1.08,
+            1
+          )
         );
         baseMesh.setMatrixAt(index, baseMatrix);
         glowMesh.setMatrixAt(index, glowMatrix);
@@ -426,11 +455,11 @@ export class TileMapRenderer {
     const mesh = new THREE.InstancedMesh(
       new THREE.BoxGeometry(1, 1, 1),
       new THREE.MeshStandardMaterial({
-        color: '#12312a',
-        emissive: '#1fffc3',
+        color: "#12312a",
+        emissive: "#1fffc3",
         emissiveIntensity: 0.2,
         metalness: 0.2,
-        roughness: 0.5,
+        roughness: 0.5
       }),
       this.obstacleCount
     );
@@ -485,7 +514,8 @@ export class TileMapRenderer {
   getModelTileScale(tile, variant) {
     const footprint = Math.max(variant.size.x, variant.size.z, 0.0001);
     const height = Math.max(variant.size.y, 0.0001);
-    const footprintScale = (this.map.tileSize * WALL_MODEL_FOOTPRINT) / footprint;
+    const footprintScale =
+      (this.map.tileSize * WALL_MODEL_FOOTPRINT) / footprint;
     const heightScale = (tile.height * WALL_MODEL_HEIGHT) / height;
     return Math.min(footprintScale, heightScale);
   }
@@ -499,12 +529,15 @@ export class TileMapRenderer {
     matrix.setPosition(pos);
     return matrix;
   }
-  
+
   getTileColor(tile) {
     switch (tile.type) {
-      case Tile.Type.Ground: return new THREE.Color('#0a1a17');
-      case Tile.Type.Obstacle: return new THREE.Color('#12312a');
-      default: return new THREE.Color('black');
+      case Tile.Type.Ground:
+        return new THREE.Color("#0a1a17");
+      case Tile.Type.Obstacle:
+        return new THREE.Color("#12312a");
+      default:
+        return new THREE.Color("black");
     }
   }
 
@@ -554,5 +587,4 @@ export class TileMapRenderer {
       }
     });
   }
-
 }

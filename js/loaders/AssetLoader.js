@@ -1,4 +1,4 @@
-import { GLTFLoader } from 'three/examples/jsm/Addons.js';
+import { GLTFLoader } from "three/examples/jsm/Addons.js";
 
 export class AssetLoader {
   constructor() {
@@ -26,13 +26,15 @@ export class AssetLoader {
 
   async loadAll() {
     const assets = {};
-    assets.player = await this.load('/public/rodot_5000_-_flying_robot.glb');
-    assets.meleeEnemy = await this.load('/public/chopper_robot_low_poly.glb');
-    assets.rangedEnemy = await this.load('/public/dalek.glb');
-    assets.healthPickup = await this.load('/public/health_pack.glb');
-    assets.multiplierPickup = await this.load('/public/lightning_bolt.glb');
-    assets.wallElements = await this.load('/public/set_of_electronic_elements_pack.glb');
-    assets.protectEntity = await this.load('/public/intel_cpu.glb');
+    assets.player = await this.load("/public/rodot_5000_-_flying_robot.glb");
+    assets.meleeEnemy = await this.load("/public/chopper_robot_low_poly.glb");
+    assets.rangedEnemy = await this.load("/public/dalek.glb");
+    assets.healthPickup = await this.load("/public/health_pack.glb");
+    assets.multiplierPickup = await this.load("/public/lightning_bolt.glb");
+    assets.wallElements = await this.load(
+      "/public/set_of_electronic_elements_pack.glb"
+    );
+    assets.protectEntity = await this.load("/public/intel_cpu.glb");
     return assets;
   }
 }

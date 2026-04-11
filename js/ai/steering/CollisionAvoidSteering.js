@@ -1,14 +1,10 @@
-import * as THREE from 'three';
-import { SteeringBehaviours } from './SteeringBehaviours.js';
-
-
+import * as THREE from "three";
+import { SteeringBehaviours } from "./SteeringBehaviours.js";
 
 export class CollisionAvoidSteering {
-
-  // Produces a steering behaviour to 
+  // Produces a steering behaviour to
   // avoid a round obstacle
   static round(entity, obstacle, lookAhead, howFar, debug) {
-
     let steer = new THREE.Vector3();
 
     // First, get the future location of our character
@@ -16,20 +12,24 @@ export class CollisionAvoidSteering {
     let predictedLocation = entity.position.clone().add(predictedChange);
 
     // show via a line
-    debug.showLine("predictedLocation", entity.position, predictedLocation, 'black');
+    debug.showLine(
+      "predictedLocation",
+      entity.position,
+      predictedLocation,
+      "black"
+    );
 
-    // Get the closest point on the line segment from 
+    // Get the closest point on the line segment from
     // our entity --> it's predicted location
-    // to the center of the round obstacle 
+    // to the center of the round obstacle
     let closestPoint = CollisionAvoidSteering.getClosestPointOnSegment(
-        entity.position,
-        predictedLocation,
-        obstacle.position
-      );
+      entity.position,
+      predictedLocation,
+      obstacle.position
+    );
 
     // show via a sphere
     debug.showSphere("closestPoint", closestPoint);
-
 
     // Check to see if there is a collision
     let isCollision =
@@ -40,26 +40,29 @@ export class CollisionAvoidSteering {
 
     if (isCollision) {
       collisionPoint = CollisionAvoidSteering.getLineCircleCollisionPoint(
-          entity.position, 
-          predictedLocation, 
-          obstacle.position, 
-          obstacle.radius
-        );
+        entity.position,
+        predictedLocation,
+        obstacle.position,
+        obstacle.radius
+      );
 
       // Get the avoid target
-      target = CollisionAvoidSteering.getAvoidTarget(collisionPoint, obstacle, howFar);
+      target = CollisionAvoidSteering.getAvoidTarget(
+        collisionPoint,
+        obstacle,
+        howFar
+      );
 
       steer = SteeringBehaviours.seek(entity, target);
 
       // show line in yellow
-      // debug.showLine("predictedLocation", entity.position, predictedLocation, 'yellow');
+      // debug.showLine("predictedLocation", 
+      // entity.position, predictedLocation, 'yellow');
 
       // show via spheres
       debug.showSphere("collisionPoint", collisionPoint);
       debug.showSphere("target", target);
-
-    }
-    else {
+    } else {
       // hide unnecessary spheres
       debug.hideObjs(["collisionPoint", "target"]);
     }
@@ -69,7 +72,6 @@ export class CollisionAvoidSteering {
 
   // Get the avoid target
   static getAvoidTarget(collisionPoint, obstacle, howFar) {
-
     let normal = collisionPoint.clone().sub(obstacle.position);
     normal.setLength(howFar);
 
@@ -85,7 +87,7 @@ export class CollisionAvoidSteering {
     let segment = end.clone().sub(start);
     let toPoint = point.clone().sub(start);
 
-    let sp = toPoint.dot(segment)/segment.length();
+    let sp = toPoint.dot(segment) / segment.length();
 
     let clampedSP = THREE.MathUtils.clamp(sp, 0, segment.length());
 
@@ -98,11 +100,10 @@ export class CollisionAvoidSteering {
   // Get the collision point between
   // a line and a circle
   static getLineCircleCollisionPoint(start, end, circlePos, radius) {
-
     let line = end.clone().sub(start);
 
     let toCircle = circlePos.clone().sub(start);
-    let sp = toCircle.dot(line)/line.length();
+    let sp = toCircle.dot(line) / line.length();
 
     // Point on line closest to center
     let projectionPoint = line.clone().setLength(sp);
@@ -119,13 +120,9 @@ export class CollisionAvoidSteering {
     return collisionPoint;
   }
 
-
-
-
   // Wall avoidance (containment via Reynolds)
   static wall(entity, wallStart, wallEnd, lookAhead, howFar, debug) {
-
-    debug.showLine("wall", wallStart, wallEnd, 'red');
+    debug.showLine("wall", wallStart, wallEnd, "red");
 
     let steer = new THREE.Vector3();
 
@@ -134,18 +131,22 @@ export class CollisionAvoidSteering {
     let predictedLocation = entity.position.clone().add(predictedChange);
 
     // show via a line
-    debug.showLine("predictedLocation", entity.position, predictedLocation, 'black');
+    debug.showLine(
+      "predictedLocation",
+      entity.position,
+      predictedLocation,
+      "black"
+    );
 
-    let collisionPoint = 
-      CollisionAvoidSteering.getLineLineCollisionPoint(
-        entity.position, 
-        predictedLocation,
-        wallStart,
-        wallEnd
-      );
+    let collisionPoint = CollisionAvoidSteering.getLineLineCollisionPoint(
+      entity.position,
+      predictedLocation,
+      wallStart,
+      wallEnd
+    );
 
     if (collisionPoint) {
-      debug.showSphere('collisionPoint', collisionPoint);
+      debug.showSphere("collisionPoint", collisionPoint);
 
       // 1. Get wall direction vector (along the wall)
       let wallDirection = wallEnd.clone().sub(wallStart);
@@ -160,13 +161,12 @@ export class CollisionAvoidSteering {
 
       // 4. Calculate target point away from wall
       let target = collisionPoint.clone().add(wallNormal.setLength(howFar));
-      debug.showSphere('target', target);
+      debug.showSphere("target", target);
 
       // 5. Seek to target
       steer = SteeringBehaviours.seek(entity, target);
-
     } else {
-      debug.hideObjs(['target', 'collisionPoint']);
+      debug.hideObjs(["target", "collisionPoint"]);
     }
 
     return steer;
@@ -175,7 +175,6 @@ export class CollisionAvoidSteering {
   // Get the collision point between
   // two lines
   static getLineLineCollisionPoint(start1, end1, start2, end2) {
-
     // Direction vectors for both lines
     let dir1 = end1.clone().sub(start1);
     let dir2 = end2.clone().sub(start2);
@@ -188,7 +187,7 @@ export class CollisionAvoidSteering {
     // Calculate parameters u1 and u2
     let dx = start2.x - start1.x;
     let dz = start2.z - start1.z;
-    
+
     let u1 = (dx * dir2.z - dz * dir2.x) / denominator;
     let u2 = (dx * dir1.z - dz * dir1.x) / denominator;
 
@@ -197,7 +196,6 @@ export class CollisionAvoidSteering {
       return null;
     }
 
-
     let collisionPoint = new THREE.Vector3();
     collisionPoint.x = start1.x + u1 * dir1.x;
     collisionPoint.y = 0;
@@ -205,5 +203,4 @@ export class CollisionAvoidSteering {
 
     return collisionPoint;
   }
-
 }

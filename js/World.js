@@ -1,24 +1,23 @@
-import * as THREE from 'three';
-import * as Setup from './setup.js';
-import { TileMap } from './maps/TileMap.js';
-import { Hud } from './ui/Hud.js';
-import { InputHandler } from './input/InputHandler.js';
-import { EnemyEntity } from './entities/EnemyEntity.js';
-import { PickupEntity } from './entities/PickupEntity.js';
-import { PlayerEntity } from './entities/PlayerEntity.js';
-import { ProjectileEntity } from './entities/ProjectileEntity.js';
-import { ProtectEntity } from './entities/ProtectEntity.js';
-import { WaveDirector } from './gameflow/WaveDirector.js';
-import { StateMachine } from './ai/decisions/StateMachine.js';
-import { JPS } from './ai/pathfinding/JPS.js';
-import { AssetLoader } from './loaders/AssetLoader.js';
-import { WaveSetupState } from './gameflow/states/WaveSetupState.js';
+import * as THREE from "three";
+import * as Setup from "./setup.js";
+import { TileMap } from "./maps/TileMap.js";
+import { Hud } from "./ui/Hud.js";
+import { InputHandler } from "./input/InputHandler.js";
+import { EnemyEntity } from "./entities/EnemyEntity.js";
+import { PickupEntity } from "./entities/PickupEntity.js";
+import { PlayerEntity } from "./entities/PlayerEntity.js";
+import { ProjectileEntity } from "./entities/ProjectileEntity.js";
+import { ProtectEntity } from "./entities/ProtectEntity.js";
+import { WaveDirector } from "./gameflow/WaveDirector.js";
+import { StateMachine } from "./ai/decisions/StateMachine.js";
+import { JPS } from "./ai/pathfinding/JPS.js";
+import { AssetLoader } from "./loaders/AssetLoader.js";
+import { WaveSetupState } from "./gameflow/states/WaveSetupState.js";
 
 const CAMERA_OFFSET = new THREE.Vector3(0, 34, 10);
 const PROTECT_SPAWN_TILE_RADIUS = 3;
-const PATH_HEURISTIC = (a, b, weight = 1) => (
-  (Math.abs(a.row - b.row) + Math.abs(a.col - b.col)) * weight
-);
+const PATH_HEURISTIC = (a, b, weight = 1) =>
+  (Math.abs(a.row - b.row) + Math.abs(a.col - b.col)) * weight;
 
 export class World {
   constructor() {
@@ -39,7 +38,7 @@ export class World {
     this.assetLoader = new AssetLoader();
     this.assets = {};
     this.assetLoadPromise = null;
-    
+
     this.projectiles = [];
     this.enemies = [];
     this.pickups = [];
@@ -72,14 +71,18 @@ export class World {
       return this.assetLoadPromise;
     }
 
-    this.assetLoadPromise = this.assetLoader.loadAll()
+    this.assetLoadPromise = this.assetLoader
+      .loadAll()
       .then((assets) => {
         this.assets = assets;
         this.applyLoadedAssets();
         return assets;
       })
       .catch((error) => {
-        console.error('Failed to load GLB assets, using fallback meshes instead.', error);
+        console.error(
+          "Failed to load GLB assets, using fallback meshes instead.",
+          error
+        );
         this.assets = {};
         return {};
       });
@@ -141,7 +144,7 @@ export class World {
 
     this.player.reset();
     this.player.setPosition(this.map.center.x, this.map.center.z);
-    this.hud.setMessage('System rebooted');
+    this.hud.setMessage("System rebooted");
     this.gameStateMachine.change(new WaveSetupState());
   }
 
@@ -160,9 +163,18 @@ export class World {
 
     const enemyCount = 4 + this.wave * 2;
     for (let i = 0; i < enemyCount; i += 1) {
-      const variant = Math.random() < Math.min(0.25 + this.wave * 0.06, 0.55) ? 'ranged' : 'melee';
+      const variant =
+        Math.random() < Math.min(0.25 + this.wave * 0.06, 0.55)
+          ? "ranged"
+          : "melee";
       const spawn = this.map.getEdgeSpawnPoint(this.player.position, 16);
-      const enemy = new EnemyEntity(this.scene, this, variant, this.wave, this.getEnemyModel(variant));
+      const enemy = new EnemyEntity(
+        this.scene,
+        this,
+        variant,
+        this.wave,
+        this.getEnemyModel(variant)
+      );
       enemy.setPosition(spawn.x, spawn.z);
       this.enemies.push(enemy);
     }
@@ -180,23 +192,29 @@ export class World {
     let enemyCount = config.enemyCount ?? 0;
 
     for (let i = 0; i < enemyCount; i++) {
-      let variant = Math.random() < meleeChance ? 'melee' : 'ranged';
+      let variant = Math.random() < meleeChance ? "melee" : "ranged";
       let spawn = this.map.getEdgeSpawnPoint(this.player?.position, 16);
       let enemyClass = this.enemyClass ?? EnemyEntity;
-      let enemy = new enemyClass(this.scene, this, variant, this.wave, this.getEnemyModel(variant));
+      let enemy = new enemyClass(
+        this.scene,
+        this,
+        variant,
+        this.wave,
+        this.getEnemyModel(variant)
+      );
       enemy.setPosition(spawn.x, spawn.z);
       this.enemies.push(enemy);
     }
   }
 
   getEnemyModel(variant) {
-    return variant === 'melee'
+    return variant === "melee"
       ? this.assets?.meleeEnemy
       : this.assets?.rangedEnemy;
   }
 
   getPickupModel(type) {
-    return type === 'health'
+    return type === "health"
       ? this.assets?.healthPickup
       : this.assets?.multiplierPickup;
   }
@@ -216,8 +234,16 @@ export class World {
     }
 
     const candidates = [];
-    for (let dr = -PROTECT_SPAWN_TILE_RADIUS; dr <= PROTECT_SPAWN_TILE_RADIUS; dr += 1) {
-      for (let dc = -PROTECT_SPAWN_TILE_RADIUS; dc <= PROTECT_SPAWN_TILE_RADIUS; dc += 1) {
+    for (
+      let dr = -PROTECT_SPAWN_TILE_RADIUS;
+      dr <= PROTECT_SPAWN_TILE_RADIUS;
+      dr += 1
+    ) {
+      for (
+        let dc = -PROTECT_SPAWN_TILE_RADIUS;
+        dc <= PROTECT_SPAWN_TILE_RADIUS;
+        dc += 1
+      ) {
         if (Math.hypot(dr, dc) > PROTECT_SPAWN_TILE_RADIUS) {
           continue;
         }
@@ -260,7 +286,7 @@ export class World {
     const protectEntity = new ProtectEntity(this.scene, this.getProtectModel());
     const spawnPoint = this.getProtectSpawnPoint(protectEntity.radius);
 
-    if (typeof protectConfig.health === 'number') {
+    if (typeof protectConfig.health === "number") {
       protectEntity.maxHealth = protectConfig.health;
       protectEntity.health = protectConfig.health;
       protectEntity.updateHealthBar();
@@ -316,10 +342,27 @@ export class World {
   // Spawn health packs and score multipliers
   spawnWavePickups() {
     const healthSpot = this.map.getRandomOpenPoint(this.player.position, 10);
-    const multiplierSpot = this.map.getRandomOpenPoint(this.player.position, 12);
+    const multiplierSpot = this.map.getRandomOpenPoint(
+      this.player.position,
+      12
+    );
 
-    this.pickups.push(new PickupEntity(this.scene, 'health', healthSpot, this.getPickupModel('health')));
-    this.pickups.push(new PickupEntity(this.scene, 'multiplier', multiplierSpot, this.getPickupModel('multiplier')));
+    this.pickups.push(
+      new PickupEntity(
+        this.scene,
+        "health",
+        healthSpot,
+        this.getPickupModel("health")
+      )
+    );
+    this.pickups.push(
+      new PickupEntity(
+        this.scene,
+        "multiplier",
+        multiplierSpot,
+        this.getPickupModel("multiplier")
+      )
+    );
   }
 
   addProjectile(config) {
@@ -349,7 +392,7 @@ export class World {
     this.pendingWaveTimer += dt;
 
     if (!this.arenaRegenerated && this.pendingWaveTimer > 1.2) {
-      this.hud.setMessage('Map rerouting');
+      this.hud.setMessage("Map rerouting");
       this.arenaRegenerated = true;
     }
 
@@ -370,27 +413,42 @@ export class World {
         continue;
       }
 
-      if (this.map.collidesCircle(projectile.position.x, projectile.position.z, projectile.radius)) {
+      if (
+        this.map.collidesCircle(
+          projectile.position.x,
+          projectile.position.z,
+          projectile.radius
+        )
+      ) {
         projectile.alive = false;
         continue;
       }
 
-      if (projectile.owner === 'player') {
+      if (projectile.owner === "player") {
         for (const enemy of this.enemies) {
           if (!enemy.alive) {
             continue;
           }
 
-          if (projectile.position.distanceTo(enemy.position) <= projectile.radius + enemy.radius) {
+          if (
+            projectile.position.distanceTo(enemy.position) <=
+            projectile.radius + enemy.radius
+          ) {
             enemy.takeDamage(projectile.damage);
             projectile.alive = false;
 
             if (!enemy.alive) {
               this.score += enemy.scoreValue * this.player.getScoreMultiplier();
               if (Math.random() < 0.16) {
-                const pickupKind = Math.random() < 0.6 ? 'health' : 'multiplier';
+                const pickupKind =
+                  Math.random() < 0.6 ? "health" : "multiplier";
                 this.pickups.push(
-                  new PickupEntity(this.scene, pickupKind, enemy.position, this.getPickupModel(pickupKind))
+                  new PickupEntity(
+                    this.scene,
+                    pickupKind,
+                    enemy.position,
+                    this.getPickupModel(pickupKind)
+                  )
                 );
               }
             }
@@ -399,7 +457,10 @@ export class World {
           }
         }
       } else {
-        if (projectile.position.distanceTo(this.player.position) <= projectile.radius + this.player.radius) {
+        if (
+          projectile.position.distanceTo(this.player.position) <=
+          projectile.radius + this.player.radius
+        ) {
           this.player.takeDamage(projectile.damage);
           projectile.alive = false;
           continue;
@@ -408,7 +469,8 @@ export class World {
         if (
           this.protectEntity &&
           this.protectEntity.health > 0 &&
-          projectile.position.distanceTo(this.protectEntity.position) <= projectile.radius + this.protectEntity.radius
+          projectile.position.distanceTo(this.protectEntity.position) <=
+            projectile.radius + this.protectEntity.radius
         ) {
           this.protectEntity.takeDamage(projectile.damage);
           projectile.alive = false;
@@ -421,7 +483,11 @@ export class World {
         continue;
       }
 
-      if (enemy.variant === 'melee' && enemy.position.distanceTo(this.player.position) <= enemy.attackRange + this.player.radius) {
+      if (
+        enemy.variant === "melee" &&
+        enemy.position.distanceTo(this.player.position) <=
+          enemy.attackRange + this.player.radius
+      ) {
         enemy.touchPlayer();
       }
     }
@@ -433,7 +499,10 @@ export class World {
         continue;
       }
 
-      if (pickup.position.distanceTo(this.player.position) <= pickup.radius + this.player.radius) {
+      if (
+        pickup.position.distanceTo(this.player.position) <=
+        pickup.radius + this.player.radius
+      ) {
         pickup.apply(this.player);
         pickup.alive = false;
       }
@@ -470,16 +539,19 @@ export class World {
   }
 
   updateHud(dt) {
-    this.hud.render({
-      score: this.score,
-      wave: this.wave,
-      health: this.player.health,
-      maxHealth: this.player.maxHealth,
-      enemies: this.enemies.length,
-      multiplier: this.player.getScoreMultiplier(),
-      multiplierTimer: this.player.multiplierTimer,
-      gameOver: this.gameOver,
-    }, dt);
+    this.hud.render(
+      {
+        score: this.score,
+        wave: this.wave,
+        health: this.player.health,
+        maxHealth: this.player.maxHealth,
+        enemies: this.enemies.length,
+        multiplier: this.player.getScoreMultiplier(),
+        multiplierTimer: this.player.multiplierTimer,
+        gameOver: this.gameOver
+      },
+      dt
+    );
   }
 
   render() {

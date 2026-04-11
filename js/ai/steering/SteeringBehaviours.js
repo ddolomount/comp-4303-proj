@@ -1,15 +1,12 @@
-import * as THREE from 'three';
-
+import * as THREE from "three";
 
 // This is our static namespace essentially
 // for creating static steering behaviours
 // that we can use on our NPCs
 export class SteeringBehaviours {
-
   // Seek
   static seek(entity, target) {
-
-    // This way we can pass in either 
+    // This way we can pass in either
     // an entity or a position itself
     let targetPos = target.position || target;
 
@@ -18,7 +15,6 @@ export class SteeringBehaviours {
 
     let force = desired.sub(entity.velocity);
     return force;
-
   }
 
   // Flee
@@ -55,7 +51,6 @@ export class SteeringBehaviours {
 
   // Arrive
   static arrive(entity, target, radius, stopRadius) {
-
     let targetPos = target.position || target;
 
     let desired = targetPos.clone().sub(entity.position);
@@ -67,7 +62,6 @@ export class SteeringBehaviours {
       return entity.velocity.clone().multiplyScalar(-entity.maxForce);
     }
 
-
     let speed = entity.topSpeed;
     if (distance < radius) {
       speed = speed * (distance / radius);
@@ -78,17 +72,15 @@ export class SteeringBehaviours {
     // Steering = desired velocity - current velocity
     let steer = desired.sub(entity.velocity);
     return steer;
-
   }
 
   // Wander
   static wander(entity, d = 5, r = 2, a = 0.3) {
-
     // First iteration, set to random angle between 0 and 2PI
     if (!entity.wanderAngle) {
       entity.wanderAngle = Math.random() * 2 * Math.PI;
     }
-    
+
     // Predict a future position d away
     let target = entity.velocity.clone().setLength(d);
     target.add(entity.position);
@@ -102,10 +94,8 @@ export class SteeringBehaviours {
 
     // Update wander angle
     entity.wanderAngle += Math.random() * 2 * a - a;
-    
+
     // Return seek to target
     return SteeringBehaviours.seek(entity, target);
-
   }
-
 }

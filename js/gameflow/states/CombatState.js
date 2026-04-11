@@ -1,6 +1,6 @@
-import { State } from '../../ai/decisions/State.js';
-import { GameOverState } from '../states/GameOverState.js'
-import { IntermissionState } from '../states/IntermissionState.js'
+import { State } from "../../ai/decisions/State.js";
+import { GameOverState } from "../states/GameOverState.js";
+import { IntermissionState } from "../states/IntermissionState.js";
 
 export class CombatState extends State {
   enter(world) {}
@@ -32,6 +32,6 @@ export class CombatState extends State {
       world.gameStateMachine.change(new IntermissionState());
     }
   }
- 
+
   exit(world) {}
 }

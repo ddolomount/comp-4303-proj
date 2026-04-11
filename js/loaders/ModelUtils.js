@@ -1,11 +1,10 @@
-import * as THREE from 'three';
-import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import * as THREE from "three";
+import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
-export function createModelInstance(template, {
-  targetHeight = 1,
-  targetFootprint = null,
-  yaw = 0,
-} = {}) {
+export function createModelInstance(
+  template,
+  { targetHeight = 1, targetFootprint = null, yaw = 0 } = {}
+) {
   if (!template) {
     return { model: null, clips: [] };
   }
@@ -51,7 +50,7 @@ export function createModelInstance(template, {
   instance.updateMatrixWorld(true);
   return {
     model: instance,
-    clips,
+    clips
   };
 }
 
@@ -66,7 +65,7 @@ export function pickDefaultAnimationClip(clips) {
     /fly/i,
     /walk/i,
     /run/i,
-    /animation/i,
+    /animation/i
   ];
 
   for (const pattern of preferredPatterns) {

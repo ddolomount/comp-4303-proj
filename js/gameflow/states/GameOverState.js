@@ -1,7 +1,7 @@
-import { State } from '../../ai/decisions/State.js';
+import { State } from "../../ai/decisions/State.js";
 
 export class GameOverState extends State {
-  constructor(message = 'Core failure - press R to restart') {
+  constructor(message = "Core failure - press R to restart") {
     super();
     this.message = message;
   }
