@@ -16,8 +16,8 @@ export function createModelInstance(template, {
 
   instance.traverse((child) => {
     if (child.isMesh) {
-      child.castShadow = true;
-      child.receiveShadow = true;
+      // child.castShadow = true;
+      // child.receiveShadow = true;wdawd
     }
   });
 
