@@ -12,44 +12,55 @@ export class CollisionAvoidWhiskers {
     maxForce,
     debug = null
   ) {
-    const steer = new THREE.Vector3();
-    const forward = this.getForward(entity);
+    let steer = new THREE.Vector3();
+    let forward = this.getForward(entity);
     if (forward.lengthSq() === 0) {
       return steer;
     }
 
-    const start = entity.position.clone();
-    const leftDir = forward
-      .clone()
-      .applyAxisAngle(new THREE.Vector3(0, 1, 0), whiskerAngle);
-    const rightDir = forward
-      .clone()
-      .applyAxisAngle(new THREE.Vector3(0, 1, 0), -whiskerAngle);
-    const speedScale = this.getSpeedScale(entity);
-    const scaledLookAhead = lookAhead * speedScale;
-    const scaledWhiskerLength = whiskerLength * speedScale;
+    let start = entity.position.clone();
 
-    const rays = [
+    let cosA = Math.cos(whiskerAngle);
+    let sinA = Math.sin(whiskerAngle);
+
+    let leftDir = new THREE.Vector3(
+      forward.x * cosA - forward.z * sinA,
+      0,
+      forward.x * sinA + forward.z * cosA
+    );
+
+    let rightDir = new THREE.Vector3(
+      forward.x * cosA + forward.z * sinA,
+      0,
+      -forward.x * sinA + forward.z * cosA
+    );
+
+    let speedScale = this.getSpeedScale(entity);
+    let scaledLookAhead = lookAhead * speedScale;
+    let scaledWhiskerLength = whiskerLength * speedScale;
+
+    let rays = [
       { name: "center", dir: forward, len: scaledLookAhead, weight: 1.2 },
       { name: "left", dir: leftDir, len: scaledWhiskerLength, weight: 0.85 },
       { name: "right", dir: rightDir, len: scaledWhiskerLength, weight: 0.85 }
     ];
 
+    // Choose force for each ray based on closest obstacle
     for (const ray of rays) {
       let end = start.clone().addScaledVector(ray.dir, ray.len);
 
-      let hit = this.closestWallHit(start, end, map, entity.radius ?? 0.4);
-      if (!hit) {
-        continue;
-      }
+      let hit = this.closestWallHit(start, end, map, entity.radius);
 
-      let target = hit.collisionPoint
-        .clone()
-        .addScaledVector(hit.normal, howFar);
-      let force = SteeringBehaviours.seek(entity, target).multiplyScalar(
-        ray.weight
-      );
-      steer.add(force);
+      if (hit) {
+        let target = hit.collisionPoint
+          .clone()
+          .addScaledVector(hit.normal, howFar);
+        let force = SteeringBehaviours.seek(entity, target).multiplyScalar(
+          ray.weight
+        );
+
+        steer.add(force);
+      }
     }
 
     steer.clampLength(0, maxForce);
@@ -57,13 +68,10 @@ export class CollisionAvoidWhiskers {
   }
 
   static getSpeedScale(entity) {
-    const speed = entity.velocity?.length?.() ?? 0;
-    const topSpeed = entity.topSpeed ?? speed;
-    if (topSpeed <= 0) {
-      return 0;
-    }
+    let speed = entity.velocity?.length?.() ?? 0;
+    let topSpeed = entity.topSpeed;
 
-    const speedRatio = THREE.MathUtils.clamp(speed / topSpeed, 0, 1);
+    let speedRatio = THREE.MathUtils.clamp(speed / topSpeed, 0, 1);
     return THREE.MathUtils.lerp(0.2, 1, speedRatio);
   }
 
@@ -83,28 +91,33 @@ export class CollisionAvoidWhiskers {
     return forward.normalize();
   }
 
+  // Check if / where ray enters wall
   static closestWallHit(start, end, map, radius = 0.4) {
-    const direction = end.clone().sub(start);
-    const distance = direction.length();
+    let direction = end.clone().sub(start);
+    let distance = direction.length();
     if (distance === 0) {
       return null;
     }
 
-    const steps = Math.max(
+    // Create steps to break ray into smaller pieces to check
+    let steps = Math.max(
       4,
       Math.ceil(distance / Math.max(0.2, map.tileSize * 0.2))
     );
     direction.normalize();
 
+    // Iterate over ray in steps
     for (let i = 1; i <= steps; i += 1) {
       const sample = start
         .clone()
         .addScaledVector(direction, (distance / steps) * i);
+
+      // Check if overlapping with wall
       if (!map.collidesCircle(sample.x, sample.z, radius)) {
         continue;
       }
 
-      const wallData = this.getNearestWallData(map, sample, radius);
+      let wallData = this.getNearestWallData(map, sample, radius);
       if (wallData) {
         return wallData;
       }
@@ -113,24 +126,40 @@ export class CollisionAvoidWhiskers {
     return null;
   }
 
+  // Get data about nearest wall to entity
   static getNearestWallData(map, point, radius) {
-    const row = Math.floor((point.z - map.minZ) / map.tileSize);
-    const col = Math.floor((point.x - map.minX) / map.tileSize);
-    const searchRadius = Math.ceil(radius / map.tileSize) + 2;
+    const tile = map.quantize(point);
+    if (!tile) {
+      return null;
+    }
+
+    let searchRadius = Math.ceil(radius / map.tileSize) + 2;
     let best = null;
     let bestDistanceSq = Infinity;
 
-    for (let dr = -searchRadius; dr <= searchRadius; dr += 1) {
-      for (let dc = -searchRadius; dc <= searchRadius; dc += 1) {
-        const testRow = row + dr;
-        const testCol = col + dc;
+    // Check all nearby tiles around the current tile
+    for (
+      let deltaRow = -searchRadius;
+      deltaRow <= searchRadius;
+      deltaRow += 1
+    ) {
+      for (
+        let deltaCol = -searchRadius;
+        deltaCol <= searchRadius;
+        deltaCol += 1
+      ) {
+        let testRow = tile.row + deltaRow;
+        let testCol = tile.col + deltaCol;
+
+        // Ignore floor tiles
         if (!map.isWallTile(testRow, testCol)) {
           continue;
         }
 
-        const wallCenter = map.localizeRowCol(testRow, testCol);
-        const half = map.tileSize / 2;
-        const nearestPoint = new THREE.Vector3(
+        // Get wall tile bounds and find closest point on wall
+        let wallCenter = map.localizeRowCol(testRow, testCol);
+        let half = map.tileSize / 2;
+        let nearestPoint = new THREE.Vector3(
           THREE.MathUtils.clamp(
             point.x,
             wallCenter.x - half,
@@ -144,11 +173,13 @@ export class CollisionAvoidWhiskers {
           )
         );
 
-        const distanceSq = nearestPoint.distanceToSquared(point);
+        // Check if point on wall is farther than collision radius
+        let distanceSq = nearestPoint.distanceToSquared(point);
         if (distanceSq > radius * radius || distanceSq >= bestDistanceSq) {
           continue;
         }
 
+        // Create normal vector to wall
         let normal = point.clone().sub(nearestPoint);
         if (normal.lengthSq() < 0.0001) {
           normal = point.clone().sub(wallCenter);
