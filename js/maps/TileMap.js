@@ -21,6 +21,7 @@ export class TileMap extends LevelMap {
     this.grid = [];
     this.center = new THREE.Vector3();
     this.renderer = null;
+    this.obstacleModelPack = null;
     this.generate();
   }
 
@@ -36,7 +37,19 @@ export class TileMap extends LevelMap {
       this.renderer.dispose(this.scene);
     }
 
-    this.renderer = new TileMapRenderer(this);
+    this.renderer = new TileMapRenderer(this, this.obstacleModelPack);
+    this.renderer.render(this.scene);
+  }
+
+  setObstacleModelPack(modelPack) {
+    this.obstacleModelPack = modelPack;
+
+    if (!this.renderer) {
+      return;
+    }
+
+    this.renderer.dispose(this.scene);
+    this.renderer = new TileMapRenderer(this, this.obstacleModelPack);
     this.renderer.render(this.scene);
   }
 

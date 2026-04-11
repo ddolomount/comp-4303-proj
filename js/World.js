@@ -15,6 +15,7 @@ import { AssetLoader } from './loaders/AssetLoader.js';
 import { WaveSetupState } from './gameflow/states/WaveSetupState.js';
 
 const CAMERA_OFFSET = new THREE.Vector3(0, 34, 10);
+const PROTECT_SPAWN_TILE_RADIUS = 3;
 const PATH_HEURISTIC = (a, b, weight = 1) => (
   (Math.abs(a.row - b.row) + Math.abs(a.col - b.col)) * weight
 );
@@ -87,6 +88,10 @@ export class World {
   }
 
   applyLoadedAssets() {
+    if (this.map) {
+      this.map.setObstacleModelPack(this.assets.wallElements);
+    }
+
     if (this.player) {
       this.player.applyModelTemplate(this.assets.player);
     }
@@ -97,6 +102,10 @@ export class World {
 
     for (const pickup of this.pickups) {
       pickup.applyModelTemplate(this.getPickupModel(pickup.type));
+    }
+
+    if (this.protectEntity) {
+      this.protectEntity.applyModelTemplate(this.getProtectModel());
     }
   }
 
@@ -192,6 +201,51 @@ export class World {
       : this.assets?.multiplierPickup;
   }
 
+  getProtectModel() {
+    return this.assets?.protectEntity;
+  }
+
+  getProtectSpawnPoint(radius = 0.7) {
+    if (!this.map || !this.player) {
+      return this.map?.center?.clone?.() ?? new THREE.Vector3();
+    }
+
+    const playerTile = this.map.quantize(this.player.position);
+    if (!playerTile) {
+      return this.map.getRandomOpenPoint(this.player.position, 0);
+    }
+
+    const candidates = [];
+    for (let dr = -PROTECT_SPAWN_TILE_RADIUS; dr <= PROTECT_SPAWN_TILE_RADIUS; dr += 1) {
+      for (let dc = -PROTECT_SPAWN_TILE_RADIUS; dc <= PROTECT_SPAWN_TILE_RADIUS; dc += 1) {
+        if (Math.hypot(dr, dc) > PROTECT_SPAWN_TILE_RADIUS) {
+          continue;
+        }
+
+        const row = playerTile.row + dr;
+        const col = playerTile.col + dc;
+        if (!this.map.isWalkable(row, col)) {
+          continue;
+        }
+
+        const point = this.map.localizeRowCol(row, col);
+        const minimumDistance = this.player.radius + radius + 0.4;
+        if (
+          point.distanceTo(this.player.position) >= minimumDistance &&
+          !this.map.collidesCircle(point.x, point.z, radius)
+        ) {
+          candidates.push(point);
+        }
+      }
+    }
+
+    if (candidates.length === 0) {
+      return this.map.getRandomOpenPoint(this.player.position, 0);
+    }
+
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
   spawnProtect(config) {
     if (!this.map) {
       return;
@@ -203,12 +257,13 @@ export class World {
     }
 
     const protectConfig = config?.protectTarget ?? {};
-    const spawnPoint = this.map.getRandomOpenPoint(this.player?.position, 8);
-    const protectEntity = new ProtectEntity(this.scene);
+    const protectEntity = new ProtectEntity(this.scene, this.getProtectModel());
+    const spawnPoint = this.getProtectSpawnPoint(protectEntity.radius);
 
     if (typeof protectConfig.health === 'number') {
       protectEntity.maxHealth = protectConfig.health;
       protectEntity.health = protectConfig.health;
+      protectEntity.updateHealthBar();
     } else {
       protectEntity.reset();
     }
@@ -343,9 +398,21 @@ export class World {
             break;
           }
         }
-      } else if (projectile.position.distanceTo(this.player.position) <= projectile.radius + this.player.radius) {
-        this.player.takeDamage(projectile.damage);
-        projectile.alive = false;
+      } else {
+        if (projectile.position.distanceTo(this.player.position) <= projectile.radius + this.player.radius) {
+          this.player.takeDamage(projectile.damage);
+          projectile.alive = false;
+          continue;
+        }
+
+        if (
+          this.protectEntity &&
+          this.protectEntity.health > 0 &&
+          projectile.position.distanceTo(this.protectEntity.position) <= projectile.radius + this.protectEntity.radius
+        ) {
+          this.protectEntity.takeDamage(projectile.damage);
+          projectile.alive = false;
+        }
       }
     }
 

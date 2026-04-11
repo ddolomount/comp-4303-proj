@@ -1,12 +1,18 @@
 import * as THREE from 'three';
 import { Entity } from './Entity.js';
+import { createModelInstance } from '../loaders/ModelUtils.js';
+
+const HEALTH_BAR_WIDTH = 1.8;
+const HEALTH_BAR_HEIGHT = 0.18;
+const PROTECT_ENTITY_HEIGHT = 1.3;
+const PROTECT_ENTITY_FOOTPRINT = 2.2;
 
 export class ProtectEntity extends Entity {
-  constructor(scene) {
+  constructor(scene, modelTemplate = null) {
     super({
       position: new THREE.Vector3(),
-      scale: new THREE.Vector3(1.8, 1.3, 1.8),
-      mesh: ProtectEntity.createMesh(),
+      scale: new THREE.Vector3(1.8, PROTECT_ENTITY_HEIGHT, 1.8),
+      mesh: ProtectEntity.createMesh(modelTemplate),
     });
 
     this.scene = scene;
@@ -14,16 +20,27 @@ export class ProtectEntity extends Entity {
     this.maxHealth = 300;
     this.health = this.maxHealth;
     this.group = this.mesh;
+    this.createHealthBar();
+    this.updateHealthBar();
 
     this.scene.add(this.group);
     this.syncVisuals();
   }
 
-  static createMesh() {
+  static createMesh(modelTemplate = null) {
     const group = new THREE.Group();
 
+    const { model } = createModelInstance(modelTemplate, {
+      targetFootprint: PROTECT_ENTITY_FOOTPRINT,
+    });
+    if (model) {
+      model.position.y -= PROTECT_ENTITY_HEIGHT / 2;
+      group.add(model);
+      return group;
+    }
+
     const body = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.7, 0.9, 1.3, 20),
+      new THREE.CylinderGeometry(0.7, 0.9, PROTECT_ENTITY_HEIGHT, 20),
       new THREE.MeshStandardMaterial({
         color: '#a813ce',
         emissive: '#a813ce',
@@ -41,6 +58,7 @@ export class ProtectEntity extends Entity {
 
   reset() {
     this.health = this.maxHealth;
+    this.updateHealthBar();
   }
 
   setPosition(x, z) {
@@ -52,13 +70,98 @@ export class ProtectEntity extends Entity {
     this.group.position.set(this.position.x, this.scale.y / 2, this.position.z);
   }
 
+  applyModelTemplate(modelTemplate) {
+    const mesh = ProtectEntity.createMesh(modelTemplate);
+    this.replaceVisualMesh(mesh);
+    this.syncVisuals();
+  }
+
+  replaceVisualMesh(newMesh) {
+    this.clearVisualChildren();
+    while (newMesh.children.length > 0) {
+      this.group.add(newMesh.children[0]);
+    }
+  }
+
+  clearVisualChildren() {
+    const preserved = this.healthBarGroup ? new Set([this.healthBarGroup]) : new Set();
+    const children = [...this.group.children];
+    for (const child of children) {
+      if (preserved.has(child)) {
+        continue;
+      }
+      this.group.remove(child);
+      this.disposeObject3D(child);
+    }
+  }
+
   takeDamage(amount) {
     this.health = Math.max(0, this.health - amount);
+    this.updateHealthBar();
+  }
+
+  createHealthBar() {
+    this.healthBarGroup = new THREE.Group();
+    this.healthBarGroup.position.set(0, this.scale.y * 1.15, 0);
+    this.healthBarGroup.rotation.x = -Math.PI / 2;
+
+    const background = new THREE.Mesh(
+      new THREE.PlaneGeometry(HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT),
+      new THREE.MeshBasicMaterial({
+        color: '#22081d',
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      })
+    );
+
+    const fill = new THREE.Mesh(
+      new THREE.PlaneGeometry(HEALTH_BAR_WIDTH - 0.05, HEALTH_BAR_HEIGHT - 0.05),
+      new THREE.MeshBasicMaterial({
+        color: '#d86bff',
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      })
+    );
+
+    background.renderOrder = 15;
+    fill.renderOrder = 16;
+    background.position.z = -0.01;
+
+    this.healthBarFill = fill;
+    this.healthBarGroup.add(background);
+    this.healthBarGroup.add(fill);
+    this.group.add(this.healthBarGroup);
+  }
+
+  updateHealthBar() {
+    if (!this.healthBarFill || !this.healthBarGroup) {
+      return;
+    }
+
+    const ratio = THREE.MathUtils.clamp(this.health / this.maxHealth, 0, 1);
+    this.healthBarFill.scale.x = ratio;
+    this.healthBarFill.position.x = -((1 - ratio) * (HEALTH_BAR_WIDTH - 0.05)) / 2;
+    this.healthBarGroup.visible = ratio > 0;
+
+    if (ratio > 0.6) {
+      this.healthBarFill.material.color.set('#d86bff');
+    } else if (ratio > 0.3) {
+      this.healthBarFill.material.color.set('#ffd85f');
+    } else {
+      this.healthBarFill.material.color.set('#ff6d6d');
+    }
   }
 
   dispose(scene) {
     scene.remove(this.group);
-    this.group.traverse((child) => {
+    this.disposeObject3D(this.group);
+  }
+
+  disposeObject3D(object) {
+    object.traverse((child) => {
       if (child.geometry) {
         child.geometry.dispose();
       }

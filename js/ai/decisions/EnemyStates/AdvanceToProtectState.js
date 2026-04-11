@@ -26,6 +26,23 @@ export class AdvanceToProtectState extends State {
     }
 
     entity.protectRepathTimer = Math.max(0, (entity.protectRepathTimer ?? 0) - dt);
+    const distanceToObjective = entity.position.distanceTo(protectEntity.position);
+    const contactRange = protectEntity.radius + entity.radius + 0.35;
+    const rangedCanAttack = entity.variant === 'ranged' &&
+      distanceToObjective <= entity.attackRange &&
+      entity.world.map.hasLineOfSight(entity.position, protectEntity.position);
+
+    if (rangedCanAttack) {
+      entity.velocity.multiplyScalar(0.65);
+      entity.fireAtProtectObjective();
+      return;
+    }
+
+    if (entity.variant !== 'ranged' && distanceToObjective <= contactRange) {
+      entity.velocity.multiplyScalar(0.35);
+      entity.touchProtectObjective();
+      return;
+    }
 
     const goalTile = entity.world.map.quantize(protectEntity.position);
     const goalKey = goalTile ? `${goalTile.row}:${goalTile.col}` : null;
@@ -38,8 +55,10 @@ export class AdvanceToProtectState extends State {
     }
 
     const waypoint = this.getCurrentWaypoint(entity);
-    const finalStandOff = protectEntity.radius + entity.radius + 0.75;
-    const isAtObjective = entity.position.distanceTo(protectEntity.position) <= finalStandOff;
+    const finalStandOff = entity.variant === 'ranged' && distanceToObjective > entity.attackRange
+      ? Math.max(contactRange, entity.attackRange * 0.85)
+      : contactRange + 0.4;
+    const isAtObjective = distanceToObjective <= finalStandOff;
     const steer = new THREE.Vector3();
 
     if (!waypoint || isAtObjective) {

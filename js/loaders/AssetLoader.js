@@ -31,6 +31,8 @@ export class AssetLoader {
     assets.rangedEnemy = await this.load('/public/dalek.glb');
     assets.healthPickup = await this.load('/public/health_pack.glb');
     assets.multiplierPickup = await this.load('/public/lightning_bolt.glb');
+    assets.wallElements = await this.load('/public/set_of_electronic_elements_pack.glb');
+    assets.protectEntity = await this.load('/public/intel_cpu.glb');
     return assets;
   }
 }

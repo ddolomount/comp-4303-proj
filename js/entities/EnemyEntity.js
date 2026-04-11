@@ -342,12 +342,46 @@ export class EnemyEntity extends DynamicEntity {
     this.world.player.takeDamage(this.config.damage);
   }
 
+  touchProtectObjective() {
+    if (this.cooldown > 0 || !this.world.protectEntity) {
+      return;
+    }
+
+    this.velocity.multiplyScalar(0.2);
+    this.cooldown = this.config.attackCooldown;
+    this.world.protectEntity.takeDamage(this.config.damage);
+  }
+
   fireAtPlayer() {
     if (this.cooldown > 0) {
       return;
     }
 
     const direction = this.world.player.position.clone().sub(this.position).setY(0);
+    if (direction.lengthSq() === 0) {
+      return;
+    }
+
+    this.cooldown = this.config.attackCooldown;
+    this.world.addProjectile({
+      owner: 'enemy',
+      position: this.position.clone().add(direction.clone().normalize().multiplyScalar(1.1)).setY(0.45),
+      direction,
+      speed: 16,
+      damage: this.config.damage,
+      radius: 0.24,
+      lifetime: 1.8,
+      color: '#ffb08c',
+    });
+  }
+
+  fireAtProtectObjective() {
+    const protectEntity = this.world.protectEntity;
+    if (this.cooldown > 0 || !protectEntity) {
+      return;
+    }
+
+    const direction = protectEntity.position.clone().sub(this.position).setY(0);
     if (direction.lengthSq() === 0) {
       return;
     }

@@ -40,6 +40,11 @@ export class ProtectState extends State {
       return;
     }
 
+    if (!world.protectEntity || world.protectEntity.health <= 0) {
+      world.gameStateMachine.change(new GameOverState('Objective destroyed - press R to restart'));
+      return;
+    }
+
     if (world.enemies.length === 0) {
       world.gameStateMachine.change(new IntermissionState());
     }

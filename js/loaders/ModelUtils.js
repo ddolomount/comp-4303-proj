@@ -3,6 +3,7 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 export function createModelInstance(template, {
   targetHeight = 1,
+  targetFootprint = null,
   yaw = 0,
 } = {}) {
   if (!template) {
@@ -26,7 +27,11 @@ export function createModelInstance(template, {
     const size = new THREE.Vector3();
     initialBounds.getSize(size);
 
-    if (size.y > 0.0001) {
+    const footprint = Math.max(size.x, size.z);
+    if (targetFootprint && footprint > 0.0001) {
+      const scale = targetFootprint / footprint;
+      instance.scale.multiplyScalar(scale);
+    } else if (size.y > 0.0001) {
       const scale = targetHeight / size.y;
       instance.scale.multiplyScalar(scale);
     }
