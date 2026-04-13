@@ -3,7 +3,7 @@ import { State } from "../State.js";
 import { ChaseState } from "./ChaseState.js";
 import { SteeringBehaviours } from "../../steering/SteeringBehaviours.js";
 import { GroupSteeringBehaviours } from "../../steering/GroupSteeringBehaviours.js";
-import { CollisionAvoidWhiskers } from "../../steering/CollisionAvoidWhiskers.js";
+import { CollisionAvoidSteering } from "../../steering/CollisionAvoidSteering.js";
 
 export class AttackPlayerState extends State {
   enter() {}
@@ -53,7 +53,7 @@ export class AttackPlayerState extends State {
         )
       );
       steer.add(
-        CollisionAvoidWhiskers.whiskers(
+        CollisionAvoidSteering.whiskers(
           entity,
           entity.world.map,
           1.4,
@@ -100,7 +100,7 @@ export class AttackPlayerState extends State {
       )
     );
     steer.add(
-      CollisionAvoidWhiskers.whiskers(
+      CollisionAvoidSteering.whiskers(
         entity,
         entity.world.map,
         2.4,

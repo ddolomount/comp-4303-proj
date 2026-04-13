@@ -4,7 +4,7 @@ import { AttackPlayerState } from "./AttackPlayerState.js";
 import { PatrolState } from "./PatrolState.js";
 import { SteeringBehaviours } from "../../steering/SteeringBehaviours.js";
 import { GroupSteeringBehaviours } from "../../steering/GroupSteeringBehaviours.js";
-import { CollisionAvoidWhiskers } from "../../steering/CollisionAvoidWhiskers.js";
+import { CollisionAvoidSteering } from "../../steering/CollisionAvoidSteering.js";
 
 export class ChaseState extends State {
   enter(entity) {
@@ -30,17 +30,17 @@ export class ChaseState extends State {
 
     // Ranged enemies lead player more than melee
     let lookAhead = entity.variant === "melee" ? 0.12 : 0.4;
-    
+
     // Check if player is close enough for melee enemy to being pressuring
     let isMeleePressuring =
       entity.variant === "melee" && distance <= entity.meleeEngageRange;
-    
+
     // Pursue player, flock with nearby enemies and avoid collisions
     let steer = new THREE.Vector3();
     steer.add(
       SteeringBehaviours.pursue(entity, entity.world.player, lookAhead)
     );
-    
+
     // Reduce flocking if melee close enough to pressure
     steer.add(
       GroupSteeringBehaviours.flock(
@@ -59,7 +59,7 @@ export class ChaseState extends State {
 
     // Reduce collision avoidance if close enough to pressure
     steer.add(
-      CollisionAvoidWhiskers.whiskers(
+      CollisionAvoidSteering.whiskers(
         entity,
         entity.world.map,
         isMeleePressuring ? 1.8 : 3.1,

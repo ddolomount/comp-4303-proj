@@ -3,7 +3,7 @@ import { State } from "../State.js";
 import { PatrolState } from "./PatrolState.js";
 import { SteeringBehaviours } from "../../steering/SteeringBehaviours.js";
 import { GroupSteeringBehaviours } from "../../steering/GroupSteeringBehaviours.js";
-import { CollisionAvoidWhiskers } from "../../steering/CollisionAvoidWhiskers.js";
+import { CollisionAvoidSteering } from "../../steering/CollisionAvoidSteering.js";
 
 let WAYPOINT_REACHED_DISTANCE = 0.8;
 
@@ -119,7 +119,7 @@ export class AttackObjectiveState extends State {
       )
     );
     steer.add(
-      CollisionAvoidWhiskers.whiskers(
+      CollisionAvoidSteering.whiskers(
         entity,
         entity.world.map,
         2.8,
