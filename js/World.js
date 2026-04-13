@@ -468,6 +468,9 @@ export class World {
         enemies: this.enemies.length,
         multiplier: this.player.getScoreMultiplier(),
         multiplierTimer: this.player.multiplierTimer,
+        damageMultiplier: this.player.getDamageMultiplier(),
+        damageBoostTimer: this.player.damageBoostTimer,
+        damageBoostCooldown: this.player.damageBoostCooldown,
         gameOver: this.gameOver
       },
       dt

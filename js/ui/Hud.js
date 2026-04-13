@@ -7,6 +7,10 @@ export class Hud {
         <div class="hud__title">Core Status</div>
         <div class="hud__stat"><span>Health</span><span class="hud__value" data-health>100 / 100</span></div>
         <div class="hud__stat"><span>Multiplier</span><span class="hud__value" data-multiplier>x1</span></div>
+        <div class="hud__stat">
+          <span>Damage</span>
+          <span class="hud__value" data-damage-boost>Ready</span>
+        </div>
         <div class="hud__stat"><span>Wave</span><span class="hud__value" data-wave>1</span></div>
       </div>
       <div class="hud__panel">
@@ -25,6 +29,7 @@ export class Hud {
 
     this.health = this.root.querySelector("[data-health]");
     this.multiplier = this.root.querySelector("[data-multiplier]");
+    this.damageBoost = this.root.querySelector("[data-damage-boost]");
     this.wave = this.root.querySelector("[data-wave]");
     this.score = this.root.querySelector("[data-score]");
     this.enemies = this.root.querySelector("[data-enemies]");
@@ -47,6 +52,7 @@ export class Hud {
       data.multiplier > 1
         ? `x${data.multiplier.toFixed(1)} ${data.multiplierTimer.toFixed(1)}s`
         : "x1.0";
+    this.damageBoost.textContent = this.getDamageBoostText(data);
     this.wave.textContent = `${data.wave}`;
     this.score.textContent = `${Math.floor(data.score)}`;
     this.enemies.textContent = `${data.enemies}`;
@@ -58,5 +64,18 @@ export class Hud {
         this.message.classList.add("hidden");
       }
     }
+  }
+
+  getDamageBoostText(data) {
+    if (data.damageMultiplier > 1) {
+      let timer = data.damageBoostTimer.toFixed(1);
+      return `x${data.damageMultiplier.toFixed(1)} ${timer}s`;
+    }
+
+    if (data.damageBoostCooldown > 0) {
+      return `Ready in ${data.damageBoostCooldown.toFixed(1)}s`;
+    }
+
+    return "Ready";
   }
 }

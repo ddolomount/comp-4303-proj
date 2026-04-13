@@ -1,10 +1,16 @@
 import * as THREE from "three";
 import { Entity } from "./Entity.js";
-import { createModelInstance } from "../loaders/ModelUtils.js";
-import { pickDefaultAnimationClip } from "../loader/ModelUtils.js";
+import {
+  createModelInstance,
+  pickDefaultAnimationClip
+} from "../loaders/ModelUtils.js";
 
 let PLAYER_HEIGHT = 1.45;
 let PLAYER_RADIUS = 0.78;
+let PLAYER_DAMAGE = 22;
+let DAMAGE_BOOST_MULTIPLIER = 2;
+let DAMAGE_BOOST_DURATION = 5;
+let DAMAGE_BOOST_COOLDOWN = 12;
 
 export class PlayerEntity extends Entity {
   constructor(scene, modelTemplate = null) {
@@ -23,6 +29,8 @@ export class PlayerEntity extends Entity {
     this.fireRate = 0.18;
     this.fireCooldown = 0;
     this.multiplierTimer = 0;
+    this.damageBoostTimer = 0;
+    this.damageBoostCooldown = 0;
     this.velocity = new THREE.Vector3();
     this.aimDirection = new THREE.Vector3(1, 0, 0);
     this.group = this.mesh;
@@ -184,6 +192,8 @@ export class PlayerEntity extends Entity {
     this.health = this.maxHealth;
     this.fireCooldown = 0;
     this.multiplierTimer = 0;
+    this.damageBoostTimer = 0;
+    this.damageBoostCooldown = 0;
     this.velocity.set(0, 0, 0);
   }
 
@@ -201,6 +211,13 @@ export class PlayerEntity extends Entity {
     // Count down timers
     this.fireCooldown = Math.max(0, this.fireCooldown - dt);
     this.multiplierTimer = Math.max(0, this.multiplierTimer - dt);
+    this.damageBoostTimer = Math.max(0, this.damageBoostTimer - dt);
+    this.damageBoostCooldown = Math.max(0, this.damageBoostCooldown - dt);
+
+    // Activate damage boost if shift is pressed and ability is ready
+    if (input.consumeDamageBoost()) {
+      this.activateDamageBoost(world);
+    }
 
     // Move player with collision-aware movement
     let movement = input.getMovementVector().multiplyScalar(this.speed);
@@ -229,7 +246,7 @@ export class PlayerEntity extends Entity {
           .setY(0.5),
         direction: this.aimDirection.clone(),
         speed: 28,
-        damage: 22,
+        damage: PLAYER_DAMAGE * this.getDamageMultiplier(),
         radius: 0.22,
         lifetime: 1.2,
         color: "#73ffe1"
@@ -265,6 +282,22 @@ export class PlayerEntity extends Entity {
   addMultiplier(duration) {
     // Add score multiplier
     this.multiplierTimer = Math.max(this.multiplierTimer, duration);
+  }
+
+  activateDamageBoost(world) {
+    if (this.damageBoostTimer > 0 || this.damageBoostCooldown > 0) {
+      return;
+    }
+
+    // Double projectile damage for a short time
+    this.damageBoostTimer = DAMAGE_BOOST_DURATION;
+    this.damageBoostCooldown = DAMAGE_BOOST_COOLDOWN;
+    world.hud.setMessage("Damage boost online");
+  }
+
+  getDamageMultiplier() {
+    // Double damage while ability is active
+    return this.damageBoostTimer > 0 ? DAMAGE_BOOST_MULTIPLIER : 1;
   }
 
   getScoreMultiplier() {

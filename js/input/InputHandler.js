@@ -18,6 +18,7 @@ export class InputHandler {
     this.raycaster = new THREE.Raycaster();
     this.floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     this.restartRequested = false;
+    this.damageBoostRequested = false;
 
     // Listen for key down events and mark keys as pressed
     window.addEventListener("keydown", (e) => {
@@ -26,6 +27,10 @@ export class InputHandler {
 
       if (e.code === "KeyR") {
         this.restartRequested = true;
+      }
+
+      if ((e.code === "ShiftLeft" || e.code === "ShiftRight") && !e.repeat) {
+        this.damageBoostRequested = true;
       }
     });
 
@@ -92,6 +97,12 @@ export class InputHandler {
   consumeRestart() {
     let requested = this.restartRequested;
     this.restartRequested = false;
+    return requested;
+  }
+
+  consumeDamageBoost() {
+    let requested = this.damageBoostRequested;
+    this.damageBoostRequested = false;
     return requested;
   }
 }
