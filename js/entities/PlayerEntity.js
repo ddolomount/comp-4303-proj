@@ -1,9 +1,7 @@
 import * as THREE from "three";
 import { Entity } from "./Entity.js";
-import {
-  createModelInstance,
-  pickDefaultAnimationClip
-} from "../loaders/ModelUtils.js";
+import { createModelInstance } from "../loaders/ModelUtils.js";
+import { pickDefaultAnimationClip } from "../loader/ModelUtils.js";
 
 let PLAYER_HEIGHT = 1.45;
 let PLAYER_RADIUS = 0.78;
@@ -40,6 +38,7 @@ export class PlayerEntity extends Entity {
   static createMesh(modelTemplate) {
     let group = new THREE.Group();
 
+    // Try to create visual instance of model
     let { model, clips } = createModelInstance(modelTemplate, {
       targetHeight: PLAYER_HEIGHT,
       yaw: -Math.PI / 2
@@ -49,6 +48,7 @@ export class PlayerEntity extends Entity {
       return { mesh: group, clips };
     }
 
+    // Create default mesh if no model
     let body = new THREE.Mesh(
       new THREE.CylinderGeometry(0.7, 0.9, PLAYER_HEIGHT, 20),
       new THREE.MeshStandardMaterial({
@@ -62,6 +62,7 @@ export class PlayerEntity extends Entity {
     body.castShadow = true;
     group.add(body);
 
+    // Simple barrel on front of mesh
     let barrel = new THREE.Mesh(
       new THREE.BoxGeometry(0.32, 0.24, 1.35),
       new THREE.MeshStandardMaterial({
@@ -78,7 +79,9 @@ export class PlayerEntity extends Entity {
     return { mesh: group, clips: [] };
   }
 
+  // Initialize animation playback for model
   setupAnimations(clips) {
+    // Clear previous animations
     this.resetAnimations();
 
     if (!clips?.length) {
@@ -86,6 +89,8 @@ export class PlayerEntity extends Entity {
     }
 
     this.animationMixer = new THREE.AnimationMixer(this.group);
+
+    // Cache actions to be played later
     for (let clip of clips) {
       this.animationActions.set(
         clip.name,
@@ -93,6 +98,7 @@ export class PlayerEntity extends Entity {
       );
     }
 
+    // Start default animation if one is available
     this.playAnimation(pickDefaultAnimationClip(clips)?.name);
   }
 
@@ -105,10 +111,12 @@ export class PlayerEntity extends Entity {
       return;
     }
 
+    // Stop all previous actions so only one played at a time
     for (let action of this.animationActions.values()) {
       action.stop();
     }
 
+    // Restart and play requested animation clip
     let action = this.animationActions.get(name);
     action.reset();
     action.play();
@@ -117,6 +125,7 @@ export class PlayerEntity extends Entity {
 
   resetAnimations() {
     if (this.animationMixer) {
+      // Stop all curently playing clips and clear cache
       this.animationMixer.stopAllAction();
       this.animationMixer.uncacheRoot(this.group);
     }
@@ -127,8 +136,12 @@ export class PlayerEntity extends Entity {
   }
 
   applyModelTemplate(modelTemplate) {
+    // Build new model
     let { mesh, clips } = PlayerEntity.createMesh(modelTemplate);
+
+    // Replace current mesh with model
     this.replaceVisualMesh(mesh);
+
     this.setupAnimations(clips);
     this.syncVisuals();
   }
@@ -150,9 +163,12 @@ export class PlayerEntity extends Entity {
 
   disposeObject3D(object) {
     object.traverse((child) => {
+      // Free geometry buffers
       if (child.geometry) {
         child.geometry.dispose();
       }
+
+      // Free materials
       if (child.material) {
         if (Array.isArray(child.material)) {
           child.material.forEach((material) => material.dispose());
@@ -164,6 +180,7 @@ export class PlayerEntity extends Entity {
   }
 
   reset() {
+    // Restore gameplay state for new run or wave
     this.health = this.maxHealth;
     this.fireCooldown = 0;
     this.multiplierTimer = 0;
@@ -176,27 +193,34 @@ export class PlayerEntity extends Entity {
   }
 
   update(dt, input, world) {
+    // Advance animation
     if (this.animationMixer) {
       this.animationMixer.update(dt);
     }
 
+    // Count down timers
     this.fireCooldown = Math.max(0, this.fireCooldown - dt);
     this.multiplierTimer = Math.max(0, this.multiplierTimer - dt);
 
+    // Move player with collision-aware movement
     let movement = input.getMovementVector().multiplyScalar(this.speed);
     this.velocity.copy(movement);
     this.position.copy(
       world.map.moveWithCollisions(this.position, movement, this.radius, dt)
     );
 
+    // Aim toward mouse input
     let aim = input.pointerWorld.clone().sub(this.position);
     aim.y = 0;
     if (aim.lengthSq() > 0.0001) {
       this.aimDirection.copy(aim.normalize());
     }
 
+    // Shoot if mouse clicked and cooldown has expired
     if (input.mouseDown && this.fireCooldown === 0) {
       this.fireCooldown = this.fireRate;
+
+      // Spawn projectile in front of player
       world.addProjectile({
         owner: "player",
         position: this.position
@@ -216,32 +240,40 @@ export class PlayerEntity extends Entity {
   }
 
   syncVisuals() {
+    // Position player model
     this.group.position.set(
       this.position.x,
       PLAYER_HEIGHT / 2,
       this.position.z
     );
+
+    // Rotate player to face current aim direction
     let yaw = Math.atan2(this.aimDirection.x, this.aimDirection.z);
     this.group.rotation.y = yaw;
   }
 
   takeDamage(amount) {
+    // Remove damage taken from health
     this.health = Math.max(0, this.health - amount);
   }
 
   heal(amount) {
+    // Increase health by heal amount
     this.health = Math.min(this.maxHealth, this.health + amount);
   }
 
   addMultiplier(duration) {
+    // Add score multiplier
     this.multiplierTimer = Math.max(this.multiplierTimer, duration);
   }
 
   getScoreMultiplier() {
+    // Double score when powerup active
     return this.multiplierTimer > 0 ? 2 : 1;
   }
 
   dispose(scene) {
+    // Remove player, stop animations and dispose of model/mesh
     scene.remove(this.group);
     this.resetAnimations();
     this.disposeObject3D(this.group);

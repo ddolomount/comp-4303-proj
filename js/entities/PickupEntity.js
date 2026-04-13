@@ -54,6 +54,7 @@ export class PickupEntity extends Entity {
   static createMesh(config, modelTemplate) {
     let group = new THREE.Group();
 
+    // Try to create visual instance of model
     let { model, clips } = createModelInstance(modelTemplate, {
       targetHeight: config.modelHeight ?? 1.05
     });
@@ -65,6 +66,7 @@ export class PickupEntity extends Entity {
       return { mesh: group, clips };
     }
 
+    // Create default mesh if no model
     let mesh = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.7, 0),
       new THREE.MeshStandardMaterial({
@@ -80,7 +82,9 @@ export class PickupEntity extends Entity {
     return { mesh: group, clips: [] };
   }
 
+  // Initialize animation playback for model
   setupAnimations(clips) {
+    // Clear previous animations
     this.resetAnimations();
 
     if (!clips?.length) {
@@ -88,6 +92,8 @@ export class PickupEntity extends Entity {
     }
 
     this.animationMixer = new THREE.AnimationMixer(this.mesh);
+
+    // Cache actions to be played later
     for (let clip of clips) {
       this.animationActions.set(
         clip.name,
@@ -95,6 +101,7 @@ export class PickupEntity extends Entity {
       );
     }
 
+    // Start default animation if one is available
     this.playAnimation(pickDefaultAnimationClip(clips)?.name);
   }
 
@@ -107,10 +114,12 @@ export class PickupEntity extends Entity {
       return;
     }
 
+    // Stop all previous actions so only one played at a time
     for (let action of this.animationActions.values()) {
       action.stop();
     }
 
+    // Restart and play requested animation clip
     let action = this.animationActions.get(name);
     action.reset();
     action.play();
@@ -119,6 +128,7 @@ export class PickupEntity extends Entity {
 
   resetAnimations() {
     if (this.animationMixer) {
+      // Stop all currently playing clips and clear cache
       this.animationMixer.stopAllAction();
       this.animationMixer.uncacheRoot(this.mesh);
     }
@@ -129,7 +139,10 @@ export class PickupEntity extends Entity {
   }
 
   applyModelTemplate(modelTemplate) {
+    // Build new model
     let { mesh, clips } = PickupEntity.createMesh(this.config, modelTemplate);
+
+    // Replace current mesh with model
     this.replaceVisualMesh(mesh);
     this.setupAnimations(clips);
   }
@@ -151,9 +164,12 @@ export class PickupEntity extends Entity {
 
   disposeObject3D(object) {
     object.traverse((child) => {
+      // Free geometry buffers
       if (child.geometry) {
         child.geometry.dispose();
       }
+
+      // Free materials
       if (child.material) {
         if (Array.isArray(child.material)) {
           child.material.forEach((material) => material.dispose());
@@ -165,19 +181,24 @@ export class PickupEntity extends Entity {
   }
 
   update(dt) {
+    // Advance pickup animation
     this.age += dt;
     if (this.animationMixer) {
       this.animationMixer.update(dt);
     }
+
+    // Float and spin pickup mesh
     this.mesh.position.y = this.position.y + Math.sin(this.age * 2.6) * 0.18;
     this.mesh.rotation.y += dt * 1.6;
   }
 
   apply(player) {
+    // Apply pickup effect to player
     this.config.apply(player);
   }
 
   dispose(scene) {
+    // Remove pickup, stop animations and dispose of model/mesh
     scene.remove(this.mesh);
     this.resetAnimations();
     this.disposeObject3D(this.mesh);

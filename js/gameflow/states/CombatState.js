@@ -6,7 +6,6 @@ export class CombatState extends State {
   enter(world) {}
 
   update(world, dt) {
-    
     // Update player
     world.player.update(dt, world.input, world);
 

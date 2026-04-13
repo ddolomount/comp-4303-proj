@@ -92,6 +92,7 @@ export class EnemyEntity extends DynamicEntity {
   static createMesh(config, modelTemplate) {
     let group = new THREE.Group();
 
+    // Try to create visual instance of model
     let { model, clips } = createModelInstance(modelTemplate, {
       targetHeight: ENEMY_HEIGHT
     });
@@ -100,6 +101,7 @@ export class EnemyEntity extends DynamicEntity {
       return { mesh: group, clips };
     }
 
+    // Create default mesh if no model
     let body = new THREE.Mesh(
       new THREE.CapsuleGeometry(0.68, 1.05, 8, 16),
       new THREE.MeshStandardMaterial({
@@ -113,6 +115,7 @@ export class EnemyEntity extends DynamicEntity {
     body.castShadow = true;
     group.add(body);
 
+    // Simple sensor on front of mesh
     let sensor = new THREE.Mesh(
       new THREE.BoxGeometry(0.28, 0.28, 1.05),
       new THREE.MeshStandardMaterial({
@@ -127,7 +130,9 @@ export class EnemyEntity extends DynamicEntity {
     return { mesh: group, clips: [] };
   }
 
+  // Initialize animation playback for model
   setupAnimations(clips) {
+    // Clear previous animations
     this.resetAnimations();
 
     if (!clips?.length) {
@@ -135,6 +140,8 @@ export class EnemyEntity extends DynamicEntity {
     }
 
     this.animationMixer = new THREE.AnimationMixer(this.mesh);
+
+    // Cache actions to be played later
     for (let clip of clips) {
       this.animationActions.set(
         clip.name,
@@ -142,6 +149,7 @@ export class EnemyEntity extends DynamicEntity {
       );
     }
 
+    // Start default animation if one is available
     this.playAnimation(pickDefaultAnimationClip(clips)?.name);
   }
 
@@ -154,10 +162,12 @@ export class EnemyEntity extends DynamicEntity {
       return;
     }
 
+    // Stop all previous actions so only one played at a time
     for (let action of this.animationActions.values()) {
       action.stop();
     }
 
+    // Restart and play requested animation clip
     let action = this.animationActions.get(name);
     action.reset();
     action.play();
@@ -166,6 +176,7 @@ export class EnemyEntity extends DynamicEntity {
 
   resetAnimations() {
     if (this.animationMixer) {
+      // Stop all currently playing clips and clear cache
       this.animationMixer.stopAllAction();
       this.animationMixer.uncacheRoot(this.mesh);
     }
@@ -176,7 +187,10 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   applyModelTemplate(modelTemplate) {
+    // Build new model
     let { mesh, clips } = EnemyEntity.createMesh(this.config, modelTemplate);
+
+    // Replace current mesh with model
     this.replaceVisualMesh(mesh);
     this.setupAnimations(clips);
     this.syncVisuals();
@@ -206,9 +220,12 @@ export class EnemyEntity extends DynamicEntity {
 
   disposeObject3D(object) {
     object.traverse((child) => {
+      // Free geometry buffers
       if (child.geometry) {
         child.geometry.dispose();
       }
+
+      // Free materials
       if (child.material) {
         if (Array.isArray(child.material)) {
           child.material.forEach((material) => material.dispose());
@@ -225,17 +242,21 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   update(dt) {
+    // Skip dead enemies
     if (!this.alive) {
       return;
     }
 
+    // Advance animation
     if (this.animationMixer) {
       this.animationMixer.update(dt);
     }
 
+    // Count down timers and update current state
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.stateMachine.update(dt);
 
+    // Apply physics and collision-aware movement
     this.velocity.addScaledVector(this.acceleration, dt);
     this.velocity.multiplyScalar(this.friction);
     this.velocity.clampLength(0, this.topSpeed);
@@ -248,6 +269,7 @@ export class EnemyEntity extends DynamicEntity {
       )
     );
 
+    // Face toward movement direction
     if (this.velocity.lengthSq() > 0.0001) {
       this.forward.lerp(
         this.velocity.clone().normalize(),
@@ -260,19 +282,24 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   syncVisuals() {
+    // Position enemy model
     this.mesh.position.set(this.position.x, this.height / 2, this.position.z);
+
+    // Rotate enemy to face current forward direction
     if (this.forward.lengthSq() > 0.001) {
       this.mesh.rotation.y = Math.atan2(this.forward.x, this.forward.z);
     }
   }
 
   canSeePlayer() {
+    // Check if player is close enough to detect
     let player = this.world.player;
     let distance = this.position.distanceTo(player.position);
     if (distance > this.config.detectionRange) {
       return false;
     }
 
+    // Check if walls block sight to player
     return this.world.map.hasLineOfSight(this.position, player.position);
   }
 
@@ -284,10 +311,12 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   takeDamage(amount) {
+    // Remove damage taken from health
     this.health = Math.max(0, this.health - amount);
     this.alerted = true;
     this.updateHealthBar();
 
+    // Mark enemy dead once health is gone
     if (this.health === 0) {
       this.alive = false;
       return;
@@ -297,6 +326,7 @@ export class EnemyEntity extends DynamicEntity {
       return;
     }
 
+    // Chase player after taking damage outside protect waves
     if (
       !(this.stateMachine.state instanceof ChaseState) &&
       !(this.stateMachine.state instanceof AttackPlayerState)
@@ -306,6 +336,7 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   createHealthBar() {
+    // Create health bar above enemy
     this.healthBarGroup = new THREE.Group();
     this.healthBarGroup.position.set(0, this.height * 0.95, 0);
     this.healthBarGroup.rotation.x = -Math.PI / 2;
@@ -345,10 +376,12 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   updateHealthBar() {
+    // Skip if health bar is not ready
     if (!this.healthBarFill || !this.healthBarGroup) {
       return;
     }
 
+    // Scale health bar fill to match current health
     let ratio = THREE.MathUtils.clamp(this.health / this.maxHealth, 0, 1);
     this.healthBarFill.scale.x = ratio;
     this.healthBarFill.position.x =
@@ -365,6 +398,7 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   touchPlayer() {
+    // Melee attack player if cooldown has expired
     if (this.cooldown > 0) {
       return;
     }
@@ -375,6 +409,7 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   touchProtectObjective() {
+    // Melee attack protect objective if cooldown has expired
     if (this.cooldown > 0 || !this.world.protectEntity) {
       return;
     }
@@ -385,6 +420,7 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   fireAtPlayer() {
+    // Fire projectile at player if cooldown has expired
     if (this.cooldown > 0) {
       return;
     }
@@ -397,6 +433,7 @@ export class EnemyEntity extends DynamicEntity {
       return;
     }
 
+    // Spawn projectile in front of enemy
     this.cooldown = this.config.attackCooldown;
     this.world.addProjectile({
       owner: "enemy",
@@ -414,6 +451,7 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   fireAtProtectObjective() {
+    // Fire projectile at protect objective if cooldown has expired
     let protectEntity = this.world.protectEntity;
     if (this.cooldown > 0 || !protectEntity) {
       return;
@@ -424,6 +462,7 @@ export class EnemyEntity extends DynamicEntity {
       return;
     }
 
+    // Spawn projectile in front of enemy
     this.cooldown = this.config.attackCooldown;
     this.world.addProjectile({
       owner: "enemy",
@@ -441,6 +480,7 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   dispose(scene) {
+    // Remove enemy, stop animations and dispose of model/mesh
     scene.remove(this.mesh);
     this.resetAnimations();
     this.disposeObject3D(this.mesh);

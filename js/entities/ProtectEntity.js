@@ -30,6 +30,7 @@ export class ProtectEntity extends Entity {
   static createMesh(modelTemplate = null) {
     let group = new THREE.Group();
 
+    // Try to create visual instance of model
     let { model } = createModelInstance(modelTemplate, {
       targetFootprint: PROTECT_ENTITY_FOOTPRINT
     });
@@ -39,6 +40,7 @@ export class ProtectEntity extends Entity {
       return group;
     }
 
+    // Create default mesh if no model
     let body = new THREE.Mesh(
       new THREE.CylinderGeometry(0.7, 0.9, PROTECT_ENTITY_HEIGHT, 20),
       new THREE.MeshStandardMaterial({
@@ -57,6 +59,7 @@ export class ProtectEntity extends Entity {
   }
 
   reset() {
+    // Restore protect objective health
     this.health = this.maxHealth;
     this.updateHealthBar();
   }
@@ -67,11 +70,15 @@ export class ProtectEntity extends Entity {
   }
 
   syncVisuals() {
+    // Position protect objective model
     this.group.position.set(this.position.x, this.scale.y / 2, this.position.z);
   }
 
   applyModelTemplate(modelTemplate) {
+    // Build new model
     let mesh = ProtectEntity.createMesh(modelTemplate);
+
+    // Replace current mesh with model
     this.replaceVisualMesh(mesh);
     this.syncVisuals();
   }
@@ -98,11 +105,13 @@ export class ProtectEntity extends Entity {
   }
 
   takeDamage(amount) {
+    // Remove damage taken from health
     this.health = Math.max(0, this.health - amount);
     this.updateHealthBar();
   }
 
   createHealthBar() {
+    // Create health bar above protect objective
     this.healthBarGroup = new THREE.Group();
     this.healthBarGroup.position.set(0, this.scale.y * 1.15, 0);
     this.healthBarGroup.rotation.x = -Math.PI / 2;
@@ -142,10 +151,12 @@ export class ProtectEntity extends Entity {
   }
 
   updateHealthBar() {
+    // Skip if health bar is not ready
     if (!this.healthBarFill || !this.healthBarGroup) {
       return;
     }
 
+    // Scale health bar fill to match current health
     let ratio = THREE.MathUtils.clamp(this.health / this.maxHealth, 0, 1);
     this.healthBarFill.scale.x = ratio;
     this.healthBarFill.position.x =
@@ -162,15 +173,19 @@ export class ProtectEntity extends Entity {
   }
 
   dispose(scene) {
+    // Remove protect objective and dispose of model/mesh
     scene.remove(this.group);
     this.disposeObject3D(this.group);
   }
 
   disposeObject3D(object) {
     object.traverse((child) => {
+      // Free geometry buffers
       if (child.geometry) {
         child.geometry.dispose();
       }
+
+      // Free materials
       if (child.material) {
         if (Array.isArray(child.material)) {
           child.material.forEach((material) => material.dispose());

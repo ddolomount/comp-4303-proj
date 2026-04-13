@@ -25,6 +25,7 @@ export class ProjectileEntity {
     let glowRadius = radius * PROJECTILE_GLOW_MULTIPLIER;
     this.mesh = new THREE.Group();
 
+    // Create outer glow around projectile
     let glow = new THREE.Mesh(
       new THREE.CylinderGeometry(
         glowRadius,
@@ -46,6 +47,7 @@ export class ProjectileEntity {
     glow.rotation.x = Math.PI / 2;
     this.mesh.add(glow);
 
+    // Create bright projectile core
     let core = new THREE.Mesh(
       new THREE.CylinderGeometry(
         radius * PROJECTILE_CORE_MULTIPLIER,
@@ -65,6 +67,7 @@ export class ProjectileEntity {
     core.castShadow = true;
     this.mesh.add(core);
 
+    // Create front glow cap
     let frontCap = new THREE.Mesh(
       new THREE.SphereGeometry(
         radius * PROJECTILE_FRONT_CAP_MULTIPLIER,
@@ -80,6 +83,7 @@ export class ProjectileEntity {
     frontCap.position.z = boltLength * 0.5;
     this.mesh.add(frontCap);
 
+    // Create trailing glow cap
     let backCap = new THREE.Mesh(
       new THREE.SphereGeometry(radius * PROJECTILE_BACK_CAP_MULTIPLIER, 10, 10),
       new THREE.MeshBasicMaterial({
@@ -91,29 +95,36 @@ export class ProjectileEntity {
     backCap.position.z = -boltLength * 0.35;
     this.mesh.add(backCap);
 
+    // Point projectile mesh in travel direction
     this.mesh.quaternion.setFromUnitVectors(FORWARD_AXIS, this.direction);
     this.mesh.position.copy(this.position);
     scene.add(this.mesh);
   }
 
   update(dt) {
+    // Count down projectile lifetime
     this.lifetime -= dt;
     if (this.lifetime <= 0) {
       this.alive = false;
       return;
     }
 
+    // Move projectile forward
     this.position.addScaledVector(this.velocity, dt);
     this.mesh.position.copy(this.position);
     this.mesh.quaternion.setFromUnitVectors(FORWARD_AXIS, this.direction);
   }
 
   dispose(scene) {
+    // Remove projectile and dispose of mesh materials
     scene.remove(this.mesh);
     this.mesh.traverse((child) => {
+      // Free geometry buffers
       if (child.geometry) {
         child.geometry.dispose();
       }
+
+      // Free materials
       if (child.material) {
         if (Array.isArray(child.material)) {
           child.material.forEach((material) => material.dispose());
