@@ -9,10 +9,12 @@ export class AssetLoader {
   }
 
   load(path) {
+    // Return cached asset if it has already loaded
     if (this.cache.has(path)) {
       return Promise.resolve(this.cache.get(path));
     }
 
+    // Load GLB file and cache it for later use
     return new Promise((resolve, reject) => {
       this.loader.load(
         path,
@@ -27,6 +29,7 @@ export class AssetLoader {
   }
 
   async loadAll() {
+    // Load all game models used by entities and map obstacles
     let assets = {};
     assets.player = await this.load("/public/rodot_5000_-_flying_robot.glb");
     assets.meleeEnemy = await this.load("/public/chopper_robot_low_poly.glb");
@@ -41,10 +44,12 @@ export class AssetLoader {
   }
 
   loadAssetsInBackground(world) {
+    // Reuse existing load promise if loading already started
     if (this.loadPromise) {
       return this.loadPromise;
     }
 
+    // Load assets and apply them to anything already spawned
     this.loadPromise = this.loadAll()
       .then((assets) => {
         this.assets = assets;
@@ -52,6 +57,7 @@ export class AssetLoader {
         return assets;
       })
       .catch((error) => {
+        // Keep game running with fallback meshes if models fail to load
         console.error(
           "Failed to load GLB assets, using fallback meshes instead.",
           error
@@ -64,22 +70,27 @@ export class AssetLoader {
   }
 
   applyLoadedAssets(world) {
+    // Update map obstacle visuals
     if (world.map) {
       world.map.setObstacleModelPack(this.assets.wallElements);
     }
 
+    // Update player model
     if (world.player) {
       world.player.applyModelTemplate(this.getPlayerModel());
     }
 
+    // Update enemy models
     for (let enemy of world.enemies) {
       enemy.applyModelTemplate(this.getEnemyModel(enemy.variant));
     }
 
+    // Update pickup models
     for (let pickup of world.pickups) {
       pickup.applyModelTemplate(this.getPickupModel(pickup.type));
     }
 
+    // Update protect objective model
     if (world.protectEntity) {
       world.protectEntity.applyModelTemplate(this.getProtectModel());
     }

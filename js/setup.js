@@ -145,6 +145,59 @@ export function installPageStyles() {
       display: none;
     }
 
+    .hud__intro {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(1, 8, 7, 0.82);
+      pointer-events: auto;
+    }
+
+    .hud__intro-panel {
+      width: min(520px, 100%);
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(4, 17, 15, 0.94);
+      box-shadow: 0 22px 56px rgba(0, 0, 0, 0.42);
+      text-align: center;
+    }
+
+    .hud__intro-title {
+      font-size: 22px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+
+    .hud__intro-text {
+      margin: 0 0 22px;
+      font-size: 18px;
+      line-height: 1.5;
+      color: var(--ink);
+    }
+
+    .hud__intro-button {
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 20px;
+      background: var(--accent);
+      color: #03110f;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .hud__intro-button:hover,
+    .hud__intro-button:focus-visible {
+      background: #ffffff;
+      outline: none;
+    }
+
     @media (max-width: 720px) {
       .hud {
         flex-direction: column;

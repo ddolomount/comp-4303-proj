@@ -13,6 +13,7 @@ import { StateMachine } from "./ai/decisions/StateMachine.js";
 import { JPS } from "./ai/pathfinding/JPS.js";
 import { AStar } from "./ai/pathfinding/AStar.js";
 import { AssetLoader } from "./loaders/AssetLoader.js";
+import { IntroState } from "./gameflow/states/IntroState.js";
 import { WaveSetupState } from "./gameflow/states/WaveSetupState.js";
 
 let CAMERA_OFFSET = new THREE.Vector3(0, 34, 10);
@@ -53,6 +54,7 @@ export class World {
 
   // Initialize objects and HUD in our world
   init() {
+    // Build scene lighting and main entities
     Setup.createLights(this.scene);
 
     this.map = new TileMap(this.scene, { rows: 31, cols: 31, tileSize: 3 });
@@ -61,8 +63,10 @@ export class World {
       this.assetLoader.getPlayerModel()
     );
     this.player.setPosition(this.map.center.x, this.map.center.z);
-    this.gameStateMachine = new StateMachine(this, new WaveSetupState());
+    this.gameStateMachine = new StateMachine(this, new IntroState());
     this.gameStateMachine.state.enter(this);
+
+    // Start loading models while fallback meshes are already playable
     this.assetLoader.loadAssetsInBackground(this);
   }
 
@@ -137,6 +141,7 @@ export class World {
   }
 
   spawnEnemies(config) {
+    // Skip if world has not initialized map or enemy list
     if (!this.map || !this.enemies) {
       return;
     }
@@ -145,6 +150,7 @@ export class World {
     let enemyCount = config.enemyCount ?? 0;
 
     for (let i = 0; i < enemyCount; i++) {
+      // Pick enemy variant based on wave config
       let variant = Math.random() < meleeChance ? "melee" : "ranged";
       let spawn = this.map.getEdgeSpawnPoint(this.player?.position, 16);
       let enemyClass = this.enemyClass ?? EnemyEntity;
@@ -161,6 +167,7 @@ export class World {
   }
 
   getProtectSpawnPoint(radius = 0.7) {
+    // Fall back to map center if player or map are missing
     if (!this.map || !this.player) {
       return this.map?.center?.clone?.() ?? new THREE.Vector3();
     }
@@ -170,6 +177,7 @@ export class World {
       return this.map.getRandomOpenPoint(this.player.position, 0);
     }
 
+    // Search nearby tiles for a safe protect objective spawn
     let candidates = [];
     for (
       let dr = -PROTECT_SPAWN_TILE_RADIUS;
@@ -210,6 +218,7 @@ export class World {
   }
 
   spawnProtect(config) {
+    // Create protect objective for protect waves
     if (!this.map) {
       return;
     }
@@ -219,6 +228,7 @@ export class World {
       this.protectEntity = null;
     }
 
+    // Apply wave-specific objective health if provided
     let protectConfig = config?.protectTarget ?? {};
     let protectEntity = new ProtectEntity(
       this.scene,
@@ -240,6 +250,7 @@ export class World {
   }
 
   getPathfinder() {
+    // Create or refresh JPS pathfinder when map renderer changes
     if (!this.map) {
       return null;
     }
@@ -304,6 +315,7 @@ export class World {
   }
 
   addProjectile(config) {
+    // Add projectile to world update list
     let projectile = new ProjectileEntity(this.scene, config);
     this.projectiles.push(projectile);
     return projectile;
@@ -323,12 +335,14 @@ export class World {
   }
 
   updateCamera(dt) {
+    // Keep camera following player
     let desired = this.player.position.clone().add(CAMERA_OFFSET);
     this.camera.position.copy(desired);
     this.camera.lookAt(this.player.position.x, 0, this.player.position.z);
   }
 
   resolveProjectileHits() {
+    // Check projectile impacts against walls, enemies and objectives
     for (let projectile of this.projectiles) {
       if (!projectile.alive) {
         continue;
@@ -355,12 +369,14 @@ export class World {
             projectile.position.distanceTo(enemy.position) <=
             projectile.radius + enemy.radius
           ) {
+            // Damage enemy and award score on kill
             enemy.takeDamage(projectile.damage);
             projectile.alive = false;
 
             if (!enemy.alive) {
               this.score += enemy.scoreValue * this.player.getScoreMultiplier();
               if (Math.random() < 0.16) {
+                // Chance to drop pickup from defeated enemy
                 let pickupKind = Math.random() < 0.6 ? "health" : "multiplier";
                 this.pickups.push(
                   new PickupEntity(
@@ -398,6 +414,7 @@ export class World {
       }
     }
 
+    // Check melee contact damage against player
     for (let enemy of this.enemies) {
       if (!enemy.alive) {
         continue;
@@ -414,6 +431,7 @@ export class World {
   }
 
   resolvePickupCollection() {
+    // Apply pickups when player reaches them
     for (let pickup of this.pickups) {
       if (!pickup.alive) {
         continue;
@@ -430,6 +448,7 @@ export class World {
   }
 
   cleanupObjects() {
+    // Remove dead projectiles
     this.projectiles = this.projectiles.filter((projectile) => {
       if (projectile.alive) {
         return true;
@@ -439,6 +458,7 @@ export class World {
       return false;
     });
 
+    // Remove dead enemies
     this.enemies = this.enemies.filter((enemy) => {
       if (enemy.alive) {
         return true;
@@ -448,6 +468,7 @@ export class World {
       return false;
     });
 
+    // Remove collected pickups
     this.pickups = this.pickups.filter((pickup) => {
       if (pickup.alive) {
         return true;
@@ -459,6 +480,7 @@ export class World {
   }
 
   updateHud(dt) {
+    // Send current world state to HUD
     this.hud.render(
       {
         score: this.score,

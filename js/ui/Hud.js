@@ -1,5 +1,6 @@
 export class Hud {
   constructor() {
+    // Create main HUD panels
     this.root = document.createElement("div");
     this.root.className = "hud";
     this.root.innerHTML = `
@@ -23,10 +24,13 @@ export class Hud {
 
     this.message = document.createElement("div");
     this.message.className = "hud__message hidden";
+    this.intro = null;
 
+    // Add HUD elements to the page
     document.body.appendChild(this.root);
     document.body.appendChild(this.message);
 
+    // Cache HUD value elements for faster updates
     this.health = this.root.querySelector("[data-health]");
     this.multiplier = this.root.querySelector("[data-multiplier]");
     this.damageBoost = this.root.querySelector("[data-damage-boost]");
@@ -39,7 +43,42 @@ export class Hud {
     this.stickyMessage = false;
   }
 
+  showIntro(onStart) {
+    // Replace any existing intro overlay
+    this.hideIntro();
+
+    // Create start screen overlay
+    this.intro = document.createElement("div");
+    this.intro.className = "hud__intro";
+    this.intro.innerHTML = `
+      <div class="hud__intro-panel">
+        <div class="hud__intro-title">Motherboard Breach</div>
+        <p class="hud__intro-text">
+          Viruses are attacking the motherboard. Eliminate them before the
+          system fails.
+        </p>
+        <button class="hud__intro-button" type="button">Begin</button>
+      </div>
+    `;
+
+    // Start game when player presses begin
+    let button = this.intro.querySelector(".hud__intro-button");
+    button.addEventListener("click", onStart);
+    document.body.appendChild(this.intro);
+  }
+
+  hideIntro() {
+    // Remove start screen overlay if it exists
+    if (!this.intro) {
+      return;
+    }
+
+    this.intro.remove();
+    this.intro = null;
+  }
+
   setMessage(text, sticky = false) {
+    // Show temporary or sticky message banner
     this.message.textContent = text;
     this.message.classList.remove("hidden");
     this.messageTimer = 2.4;
@@ -47,6 +86,7 @@ export class Hud {
   }
 
   render(data, dt) {
+    // Update HUD values from world state
     this.health.textContent = `${Math.max(0, Math.ceil(data.health))} / ${data.maxHealth}`;
     this.multiplier.textContent =
       data.multiplier > 1
@@ -58,6 +98,7 @@ export class Hud {
     this.enemies.textContent = `${data.enemies}`;
     this.state.textContent = data.gameOver ? "Offline" : "Online";
 
+    // Hide temporary message after timer expires
     if (!this.stickyMessage) {
       this.messageTimer -= dt;
       if (this.messageTimer <= 0) {
@@ -67,11 +108,13 @@ export class Hud {
   }
 
   getDamageBoostText(data) {
+    // Show remaining active boost time
     if (data.damageMultiplier > 1) {
       let timer = data.damageBoostTimer.toFixed(1);
       return `x${data.damageMultiplier.toFixed(1)} ${timer}s`;
     }
 
+    // Show cooldown until boost is ready
     if (data.damageBoostCooldown > 0) {
       return `Ready in ${data.damageBoostCooldown.toFixed(1)}s`;
     }

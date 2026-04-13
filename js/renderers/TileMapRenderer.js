@@ -48,6 +48,7 @@ export class TileMapRenderer {
   }
 
   createFloor() {
+    // Create base floor under the tile grid
     let floor = new THREE.Mesh(
       new THREE.BoxGeometry(this.map.width, 1, this.map.depth),
       new THREE.MeshStandardMaterial({
@@ -64,6 +65,7 @@ export class TileMapRenderer {
   }
 
   createGridLines() {
+    // Draw grid lines across the map floor
     let group = new THREE.Group();
     let material = new THREE.LineBasicMaterial({
       color: GRID_LINE_COLOR,
@@ -93,6 +95,7 @@ export class TileMapRenderer {
   }
 
   extractObstacleVariants(modelPack) {
+    // Build reusable obstacle variants from loaded model pack
     let source = modelPack?.scene ?? modelPack;
     if (!source) {
       return [];
@@ -103,6 +106,7 @@ export class TileMapRenderer {
     let elementGroups = this.getObstacleElementGroups(elementRoots);
     let variants = [];
     for (let elementGroup of elementGroups) {
+      // Collect all mesh parts in this obstacle variant
       let parts = [];
       let variantBounds = new THREE.Box3();
 
@@ -137,6 +141,7 @@ export class TileMapRenderer {
         continue;
       }
 
+      // Center variant geometry around its own origin
       let center = new THREE.Vector3();
       variantBounds.getCenter(center);
 
@@ -157,6 +162,7 @@ export class TileMapRenderer {
   }
 
   getObstacleElementRoots(source) {
+    // Find model roots that contain obstacle meshes
     let root =
       source.getObjectByName("GLTF_SceneRootNode") ??
       this.findElementRoot(source);
@@ -165,18 +171,21 @@ export class TileMapRenderer {
   }
 
   getObstacleElementGroups(elementRoots) {
+    // Use known grouping for electronic asset pack when available
     let electronicPackGroups =
       this.getElectronicPackElementGroups(elementRoots);
     if (electronicPackGroups) {
       return electronicPackGroups;
     }
 
+    // Otherwise group nearby mesh roots by bounds
     return this.clusterObstacleElements(elementRoots).map(
       (cluster) => cluster.roots
     );
   }
 
   getElectronicPackElementGroups(elementRoots) {
+    // Special case for the electronic elements GLB layout
     let firstName = elementRoots[0]?.name ?? "";
     let lastName = elementRoots[elementRoots.length - 1]?.name ?? "";
     if (
@@ -201,6 +210,7 @@ export class TileMapRenderer {
   }
 
   findElementRoot(source) {
+    // Walk down single-child wrappers to find actual model root
     let current = source;
     while (
       current.children.length === 1 &&
@@ -214,6 +224,7 @@ export class TileMapRenderer {
   }
 
   containsMesh(object) {
+    // Check whether object tree contains renderable mesh
     let found = false;
     object.traverse((child) => {
       if (child.isMesh) {
@@ -224,6 +235,7 @@ export class TileMapRenderer {
   }
 
   clusterObstacleElements(elementRoots) {
+    // Merge model roots whose bounds overlap
     let clusters = [];
 
     for (let root of elementRoots) {
@@ -247,6 +259,7 @@ export class TileMapRenderer {
       cluster.roots.push(root);
     }
 
+    // Keep merging until no overlapping clusters remain
     let merged = true;
     while (merged) {
       merged = false;
@@ -273,6 +286,7 @@ export class TileMapRenderer {
   }
 
   boundsOverlap(a, b) {
+    // Axis-aligned bounding box overlap check
     return (
       a.min.x <= b.max.x &&
       a.max.x >= b.min.x &&
@@ -284,6 +298,7 @@ export class TileMapRenderer {
   }
 
   cloneMaterial(material) {
+    // Clone material so instanced variants can be disposed safely
     if (Array.isArray(material)) {
       return material.map((item) => item.clone());
     }
@@ -301,6 +316,7 @@ export class TileMapRenderer {
   }
 
   disposeMaterial(material) {
+    // Dispose one material or an array of materials
     if (Array.isArray(material)) {
       material.forEach((item) => item.dispose());
       return;
@@ -310,6 +326,7 @@ export class TileMapRenderer {
   }
 
   createObstacleModelGroup() {
+    // Use loaded obstacle models when available
     if (this.obstacleCount === 0 || this.obstacleVariants.length === 0) {
       return null;
     }
@@ -317,6 +334,7 @@ export class TileMapRenderer {
     let group = new THREE.Group();
     let variantMatrices = new Map();
 
+    // Group tile transforms by selected obstacle variant
     for (let r = 0; r < this.map.rows; r++) {
       for (let c = 0; c < this.map.cols; c++) {
         let tile = this.map.grid[r][c];
@@ -343,6 +361,7 @@ export class TileMapRenderer {
       }
     }
 
+    // Create instanced meshes for each variant part
     for (let [variantIndex, matrices] of variantMatrices.entries()) {
       let variant = this.obstacleVariants[variantIndex];
       for (let part of variant.parts) {
@@ -367,6 +386,7 @@ export class TileMapRenderer {
   }
 
   createObstacleBaseGroup() {
+    // Add base/glow planes under modeled obstacles
     if (this.obstacleCount === 0 || this.obstacleVariants.length === 0) {
       return null;
     }
@@ -405,6 +425,7 @@ export class TileMapRenderer {
     );
     let index = 0;
 
+    // Place base and glow under every obstacle tile
     for (let r = 0; r < this.map.rows; r += 1) {
       for (let c = 0; c < this.map.cols; c += 1) {
         let tile = this.map.grid[r][c];
@@ -448,6 +469,7 @@ export class TileMapRenderer {
   }
 
   createObstacleMesh() {
+    // Create simple box obstacles if no model pack is available
     if (this.obstacleCount === 0) {
       return null;
     }
@@ -467,6 +489,7 @@ export class TileMapRenderer {
     mesh.receiveShadow = true;
 
     let index = 0;
+    // Place one box instance per obstacle tile
     for (let r = 0; r < this.map.rows; r++) {
       for (let c = 0; c < this.map.cols; c++) {
         let tile = this.map.grid[r][c];
@@ -489,11 +512,13 @@ export class TileMapRenderer {
   }
 
   pickVariantIndex(tile, variantCount) {
+    // Pick stable variant based on tile coordinates
     let seed = (tile.row * 73856093) ^ (tile.col * 19349663);
     return ((seed % variantCount) + variantCount) % variantCount;
   }
 
   getModelTileTransformation(tile, variant) {
+    // Build transform matrix for modeled obstacle tile
     let pos = this.map.localize(tile);
     pos.y = FLOOR_Y;
 
@@ -508,10 +533,12 @@ export class TileMapRenderer {
   }
 
   getTileRotation(tile) {
+    // Give obstacle models deterministic quarter-turn rotation
     return ((tile.row * 17 + tile.col * 31) % 4) * (Math.PI / 2);
   }
 
   getModelTileScale(tile, variant) {
+    // Scale model to fit tile footprint and wall height
     let footprint = Math.max(variant.size.x, variant.size.z, 0.0001);
     let height = Math.max(variant.size.y, 0.0001);
     let footprintScale = (this.map.tileSize * WALL_MODEL_FOOTPRINT) / footprint;
@@ -520,6 +547,7 @@ export class TileMapRenderer {
   }
 
   getTileTransformation(tile) {
+    // Build transform matrix for fallback box obstacle
     let pos = this.map.localize(tile);
     pos.y = tile.height / 2 + FLOOR_Y;
 
@@ -530,6 +558,7 @@ export class TileMapRenderer {
   }
 
   getTileColor(tile) {
+    // Choose color for fallback instanced tile mesh
     switch (tile.type) {
       case Tile.Type.Ground:
         return new THREE.Color("#0a1a17");
@@ -541,6 +570,7 @@ export class TileMapRenderer {
   }
 
   setTileColor(tile, color) {
+    // Recolor fallback obstacle mesh for pathfinding debug
     if (!this.obstacleMesh || tile.isWalkable()) {
       return;
     }
@@ -567,10 +597,12 @@ export class TileMapRenderer {
   }
 
   render(scene) {
+    // Add renderer group to scene
     scene.add(this.group);
   }
 
   dispose(scene) {
+    // Remove renderer group and free GPU resources
     scene.remove(this.group);
     this.group.traverse((child) => {
       if (child.geometry) {

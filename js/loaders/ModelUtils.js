@@ -5,10 +5,12 @@ export function createModelInstance(
   template,
   { targetHeight = 1, targetFootprint = null, yaw = 0 } = {}
 ) {
+  // Return empty result if asset is not loaded yet
   if (!template) {
     return { model: null, clips: [] };
   }
 
+  // Clone template so each entity can own its own model instance
   let source = template.scene ?? template;
   let clips = template.animations ?? [];
   let instance = clone(source);
@@ -16,11 +18,11 @@ export function createModelInstance(
 
   instance.traverse((child) => {
     if (child.isMesh) {
-      // child.castShadow = true;
-      // child.receiveShadow = true;wdawd
+      // Leave mesh shadow settings from the source model unchanged
     }
   });
 
+  // Scale model to fit desired height or footprint
   let initialBounds = new THREE.Box3().setFromObject(instance);
   if (!initialBounds.isEmpty()) {
     let size = new THREE.Vector3();
@@ -38,6 +40,7 @@ export function createModelInstance(
 
   instance.updateMatrixWorld(true);
 
+  // Recenter model around origin and place bottom on ground
   let fittedBounds = new THREE.Box3().setFromObject(instance);
   if (!fittedBounds.isEmpty()) {
     let center = new THREE.Vector3();
@@ -55,10 +58,12 @@ export function createModelInstance(
 }
 
 export function pickDefaultAnimationClip(clips) {
+  // Return no animation if model has no clips
   if (!clips?.length) {
     return null;
   }
 
+  // Prefer movement/idle-style clips if names are available
   let preferredPatterns = [
     /idle/i,
     /hover/i,
@@ -68,6 +73,7 @@ export function pickDefaultAnimationClip(clips) {
     /animation/i
   ];
 
+  // Pick first matching preferred animation
   for (let pattern of preferredPatterns) {
     let match = clips.find((clip) => pattern.test(clip.name));
     if (match) {
@@ -75,5 +81,6 @@ export function pickDefaultAnimationClip(clips) {
     }
   }
 
+  // Fall back to first clip if none match
   return clips[0];
 }
