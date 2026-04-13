@@ -7,7 +7,7 @@ import { CollisionAvoidWhiskers } from "../../steering/CollisionAvoidWhiskers.js
 
 const WAYPOINT_REACHED_DISTANCE = 0.8;
 
-export class AdvanceToProtectState extends State {
+export class AttackObjectiveState extends State {
   enter(entity) {
     entity.alerted = false;
     entity.lostSightTimer = 0;
@@ -19,12 +19,13 @@ export class AdvanceToProtectState extends State {
   }
 
   update(entity, dt) {
-    const protectEntity = entity.world.protectEntity;
+    let protectEntity = entity.world.protectEntity;
     if (!protectEntity) {
       entity.stateMachine.change(new PatrolState());
       return;
     }
 
+    
     entity.protectRepathTimer = Math.max(
       0,
       (entity.protectRepathTimer ?? 0) - dt

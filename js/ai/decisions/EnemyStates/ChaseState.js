@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { State } from "../State.js";
-import { AttackState } from "./AttackState.js";
+import { AttackPlayerState } from "./AttackPlayerState.js";
 import { PatrolState } from "./PatrolState.js";
 import { SteeringBehaviours } from "../../steering/SteeringBehaviours.js";
 import { GroupSteeringBehaviours } from "../../steering/GroupSteeringBehaviours.js";
@@ -13,12 +13,14 @@ export class ChaseState extends State {
   }
 
   update(entity, dt) {
-    const distance = entity.position.distanceTo(entity.world.player.position);
+    let distance = entity.position.distanceTo(entity.world.player.position);
 
+    // Handle lost sight time based on if enemy can see player
     if (entity.canSeePlayer()) {
       entity.lostSightTimer = 0;
     } else {
       entity.lostSightTimer += dt;
+      // Go to patrol state if enemy hasn't seen player for 4.5s
       if (entity.lostSightTimer > 4.5) {
         entity.alerted = false;
         entity.stateMachine.change(new PatrolState());
@@ -26,13 +28,20 @@ export class ChaseState extends State {
       }
     }
 
-    const lookAhead = entity.variant === "melee" ? 0.12 : 0.4;
-    const isMeleePressuring =
+    // Ranged enemies lead player more than melee
+    let lookAhead = entity.variant === "melee" ? 0.12 : 0.4;
+    
+    // Check if player is close enough for melee enemy to being pressuring
+    let isMeleePressuring =
       entity.variant === "melee" && distance <= entity.meleeEngageRange;
-    const steer = new THREE.Vector3();
+    
+    // Pursue player, flock with nearby enemies and avoid collisions
+    let steer = new THREE.Vector3();
     steer.add(
       SteeringBehaviours.pursue(entity, entity.world.player, lookAhead)
     );
+    
+    // Reduce flocking if melee close enough to pressure
     steer.add(
       GroupSteeringBehaviours.flock(
         entity,
@@ -47,6 +56,8 @@ export class ChaseState extends State {
         }
       )
     );
+
+    // Reduce collision avoidance if close enough to pressure
     steer.add(
       CollisionAvoidWhiskers.whiskers(
         entity,
@@ -60,12 +71,13 @@ export class ChaseState extends State {
     );
     entity.applyForce(steer);
 
-    const enterAttackRange =
+    // Enter attack state if close enough range to player
+    let enterAttackRange =
       entity.variant === "melee"
         ? entity.attackRange + entity.world.player.radius + 0.35
         : entity.attackRange + 0.8;
     if (distance <= enterAttackRange) {
-      entity.stateMachine.change(new AttackState());
+      entity.stateMachine.change(new AttackPlayerState());
     }
   }
 

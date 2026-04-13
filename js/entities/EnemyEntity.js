@@ -3,7 +3,7 @@ import { DynamicEntity } from "./DynamicEntity.js";
 import { StateMachine } from "../ai/decisions/StateMachine.js";
 import { PatrolState } from "../ai/decisions/EnemyStates/PatrolState.js";
 import { ChaseState } from "../ai/decisions/EnemyStates/ChaseState.js";
-import { AttackState } from "../ai/decisions/EnemyStates/AttackState.js";
+import { AttackPlayerState } from "../ai/decisions/EnemyStates/AttackPlayerState.js";
 import {
   createModelInstance,
   pickDefaultAnimationClip
@@ -299,7 +299,7 @@ export class EnemyEntity extends DynamicEntity {
 
     if (
       !(this.stateMachine.state instanceof ChaseState) &&
-      !(this.stateMachine.state instanceof AttackState)
+      !(this.stateMachine.state instanceof AttackPlayerState)
     ) {
       this.stateMachine.change(new ChaseState());
     }

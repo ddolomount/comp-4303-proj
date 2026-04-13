@@ -5,34 +5,38 @@ import { SteeringBehaviours } from "../../steering/SteeringBehaviours.js";
 import { GroupSteeringBehaviours } from "../../steering/GroupSteeringBehaviours.js";
 import { CollisionAvoidWhiskers } from "../../steering/CollisionAvoidWhiskers.js";
 
-export class AttackState extends State {
+export class AttackPlayerState extends State {
   enter() {}
 
   update(entity, dt) {
-    const player = entity.world.player;
-    const distance = entity.position.distanceTo(player.position);
+    let player = entity.world.player;
+    let distance = entity.position.distanceTo(player.position);
 
+    // Handle melee enemy
     if (entity.variant === "melee") {
-      const contactRange = entity.attackRange + player.radius;
+      let contactRange = entity.attackRange + player.radius;
 
+      // Change to chase state if outside contact range + buffer
       if (distance > contactRange + 1.2) {
         entity.stateMachine.change(new ChaseState());
         return;
       }
 
+      // Attack player if inside contact range + buffer
       if (distance <= contactRange + 0.1) {
         entity.velocity.multiplyScalar(0.35);
         entity.touchPlayer();
         return;
       }
 
+      // Follow player, flock with nearby enemies, and avoid collisions
+      let steer = new THREE.Vector3();
       const arriveForce = SteeringBehaviours.arrive(
         entity,
         player,
         contactRange + 0.55,
         Math.max(0.15, contactRange - 0.1)
       );
-      let steer = new THREE.Vector3();
       steer.add(arriveForce.multiplyScalar(1.35));
       steer.add(
         GroupSteeringBehaviours.flock(
@@ -64,6 +68,7 @@ export class AttackState extends State {
       return;
     }
 
+    // Check if ranged enemy can see player
     if (
       !entity.world.map.hasLineOfSight(entity.position, player.position) ||
       distance > entity.attackRange + 3
@@ -72,12 +77,14 @@ export class AttackState extends State {
       return;
     }
 
+    // Evade player if too close
     let steer = new THREE.Vector3();
     if (distance < entity.attackRange * 0.65) {
       steer.add(SteeringBehaviours.evade(entity, player, 0.2));
     } else if (distance > entity.attackRange * 0.95) {
       steer.add(SteeringBehaviours.pursue(entity, player, 0.3));
     }
+    // Flock with nearby enemies and avoid collisions
     steer.add(
       GroupSteeringBehaviours.flock(
         entity,

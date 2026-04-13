@@ -11,7 +11,8 @@ export class PatrolState extends State {
   }
 
   update(entity, dt) {
-    const steer = new THREE.Vector3();
+    // Wander, flock with nearby enemies and avoid collisions
+    let steer = new THREE.Vector3();
     steer.add(SteeringBehaviours.wander(entity));
     steer.add(
       GroupSteeringBehaviours.flock(
@@ -40,6 +41,7 @@ export class PatrolState extends State {
     );
     entity.applyForce(steer);
 
+    // If enemy can see player begin chasing
     if (entity.canSeePlayer() || entity.alerted) {
       entity.stateMachine.change(new ChaseState());
       return;
