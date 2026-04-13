@@ -11,7 +11,7 @@ export class JPS extends Pathfinder {
     this.tileMapRenderer = tileMapRenderer;
   }
 
-  findPath(start, goal, map) {
+  findPath(start, goal, map = this.map) {
     if (!map) {
       return [];
     }
