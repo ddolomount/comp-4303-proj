@@ -5,7 +5,7 @@ import {
   pickDefaultAnimationClip
 } from "../loaders/ModelUtils.js";
 
-const PICKUP_CONFIG = {
+let PICKUP_CONFIG = {
   health: {
     color: "#ff7f73",
     emissive: "#ff6a5d",
@@ -26,9 +26,9 @@ const PICKUP_CONFIG = {
 
 export class PickupEntity extends Entity {
   constructor(scene, type, position, modelTemplate = null) {
-    const config = PICKUP_CONFIG[type];
-    const basePosition = position.clone().setY(0.7);
-    const { mesh, clips } = PickupEntity.createMesh(config, modelTemplate);
+    let config = PICKUP_CONFIG[type];
+    let basePosition = position.clone().setY(0.7);
+    let { mesh, clips } = PickupEntity.createMesh(config, modelTemplate);
 
     super({
       position: basePosition,
@@ -52,9 +52,9 @@ export class PickupEntity extends Entity {
   }
 
   static createMesh(config, modelTemplate) {
-    const group = new THREE.Group();
+    let group = new THREE.Group();
 
-    const { model, clips } = createModelInstance(modelTemplate, {
+    let { model, clips } = createModelInstance(modelTemplate, {
       targetHeight: config.modelHeight ?? 1.05
     });
     if (model) {
@@ -65,7 +65,7 @@ export class PickupEntity extends Entity {
       return { mesh: group, clips };
     }
 
-    const mesh = new THREE.Mesh(
+    let mesh = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.7, 0),
       new THREE.MeshStandardMaterial({
         color: config.color,
@@ -88,7 +88,7 @@ export class PickupEntity extends Entity {
     }
 
     this.animationMixer = new THREE.AnimationMixer(this.mesh);
-    for (const clip of clips) {
+    for (let clip of clips) {
       this.animationActions.set(
         clip.name,
         this.animationMixer.clipAction(clip)
@@ -107,11 +107,11 @@ export class PickupEntity extends Entity {
       return;
     }
 
-    for (const action of this.animationActions.values()) {
+    for (let action of this.animationActions.values()) {
       action.stop();
     }
 
-    const action = this.animationActions.get(name);
+    let action = this.animationActions.get(name);
     action.reset();
     action.play();
     this.activeAnimation = name;
@@ -129,7 +129,7 @@ export class PickupEntity extends Entity {
   }
 
   applyModelTemplate(modelTemplate) {
-    const { mesh, clips } = PickupEntity.createMesh(this.config, modelTemplate);
+    let { mesh, clips } = PickupEntity.createMesh(this.config, modelTemplate);
     this.replaceVisualMesh(mesh);
     this.setupAnimations(clips);
   }
@@ -143,7 +143,7 @@ export class PickupEntity extends Entity {
 
   clearVisualChildren() {
     while (this.mesh.children.length > 0) {
-      const child = this.mesh.children[0];
+      let child = this.mesh.children[0];
       this.mesh.remove(child);
       this.disposeObject3D(child);
     }

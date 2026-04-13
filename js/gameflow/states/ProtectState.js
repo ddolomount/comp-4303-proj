@@ -7,7 +7,7 @@ export class ProtectState extends State {
   enter(world) {
     world.spawnProtect(world.currentWaveConfig);
     world.getPathfinder();
-    for (const enemy of world.enemies) {
+    for (let enemy of world.enemies) {
       enemy.stateMachine.change(new AttackObjectiveState());
     }
     world.hud.setMessage(`Protect Wave ${world.wave}`);
@@ -18,17 +18,17 @@ export class ProtectState extends State {
     world.player.update(dt, world.input, world);
 
     // Update enemies
-    for (const enemy of world.enemies) {
+    for (let enemy of world.enemies) {
       enemy.update(dt);
     }
 
     // Update projectiles
-    for (const projectile of world.projectiles) {
+    for (let projectile of world.projectiles) {
       projectile.update(dt);
     }
 
     // Update pickups
-    for (const pickup of world.pickups) {
+    for (let pickup of world.pickups) {
       pickup.update(dt);
     }
 
@@ -37,7 +37,7 @@ export class ProtectState extends State {
     world.resolvePickupCollection();
     world.cleanupObjects();
 
-    // End game if player dies 
+    // End game if player dies
     if (world.player.health <= 0) {
       world.gameStateMachine.change(new GameOverState());
       return;

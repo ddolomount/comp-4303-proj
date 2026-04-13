@@ -1,14 +1,14 @@
 import * as THREE from "three";
 
 export function createScene() {
-  const scene = new THREE.Scene();
+  let scene = new THREE.Scene();
   scene.background = new THREE.Color("#04110f");
   scene.fog = new THREE.Fog("#04110f", 45, 130);
   return scene;
 }
 
 export function createCamera() {
-  const camera = new THREE.PerspectiveCamera(
+  let camera = new THREE.PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
     0.1,
@@ -20,7 +20,7 @@ export function createCamera() {
 }
 
 export function createRenderer() {
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  let renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
@@ -30,10 +30,10 @@ export function createRenderer() {
 }
 
 export function createLights(scene) {
-  const hemi = new THREE.HemisphereLight("#9fffe8", "#020705", 1.1);
+  let hemi = new THREE.HemisphereLight("#9fffe8", "#020705", 1.1);
   scene.add(hemi);
 
-  const sun = new THREE.DirectionalLight("#d8fff6", 1.8);
+  let sun = new THREE.DirectionalLight("#d8fff6", 1.8);
   sun.position.set(20, 40, 12);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -49,7 +49,7 @@ export function createLights(scene) {
 }
 
 export function installPageStyles() {
-  const style = document.createElement("style");
+  let style = document.createElement("style");
   style.textContent = `
     :root {
       color-scheme: dark;

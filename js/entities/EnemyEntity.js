@@ -9,7 +9,7 @@ import {
   pickDefaultAnimationClip
 } from "../loaders/ModelUtils.js";
 
-const VARIANT_CONFIG = {
+let VARIANT_CONFIG = {
   melee: {
     color: "#ff8778",
     emissive: "#ff6657",
@@ -34,15 +34,15 @@ const VARIANT_CONFIG = {
   }
 };
 
-const HEALTH_BAR_WIDTH = 1.15;
-const HEALTH_BAR_HEIGHT = 0.14;
-const ENEMY_RADIUS = 0.82;
-const ENEMY_HEIGHT = 1.55;
+let HEALTH_BAR_WIDTH = 1.15;
+let HEALTH_BAR_HEIGHT = 0.14;
+let ENEMY_RADIUS = 0.82;
+let ENEMY_HEIGHT = 1.55;
 
 export class EnemyEntity extends DynamicEntity {
   constructor(scene, world, variant, wave, modelTemplate = null) {
-    const config = VARIANT_CONFIG[variant];
-    const { mesh, clips } = EnemyEntity.createMesh(config, modelTemplate);
+    let config = VARIANT_CONFIG[variant];
+    let { mesh, clips } = EnemyEntity.createMesh(config, modelTemplate);
 
     super({
       position: new THREE.Vector3(),
@@ -90,9 +90,9 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   static createMesh(config, modelTemplate) {
-    const group = new THREE.Group();
+    let group = new THREE.Group();
 
-    const { model, clips } = createModelInstance(modelTemplate, {
+    let { model, clips } = createModelInstance(modelTemplate, {
       targetHeight: ENEMY_HEIGHT
     });
     if (model) {
@@ -100,7 +100,7 @@ export class EnemyEntity extends DynamicEntity {
       return { mesh: group, clips };
     }
 
-    const body = new THREE.Mesh(
+    let body = new THREE.Mesh(
       new THREE.CapsuleGeometry(0.68, 1.05, 8, 16),
       new THREE.MeshStandardMaterial({
         color: config.color,
@@ -113,7 +113,7 @@ export class EnemyEntity extends DynamicEntity {
     body.castShadow = true;
     group.add(body);
 
-    const sensor = new THREE.Mesh(
+    let sensor = new THREE.Mesh(
       new THREE.BoxGeometry(0.28, 0.28, 1.05),
       new THREE.MeshStandardMaterial({
         color: "#061817",
@@ -135,7 +135,7 @@ export class EnemyEntity extends DynamicEntity {
     }
 
     this.animationMixer = new THREE.AnimationMixer(this.mesh);
-    for (const clip of clips) {
+    for (let clip of clips) {
       this.animationActions.set(
         clip.name,
         this.animationMixer.clipAction(clip)
@@ -154,11 +154,11 @@ export class EnemyEntity extends DynamicEntity {
       return;
     }
 
-    for (const action of this.animationActions.values()) {
+    for (let action of this.animationActions.values()) {
       action.stop();
     }
 
-    const action = this.animationActions.get(name);
+    let action = this.animationActions.get(name);
     action.reset();
     action.play();
     this.activeAnimation = name;
@@ -176,7 +176,7 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   applyModelTemplate(modelTemplate) {
-    const { mesh, clips } = EnemyEntity.createMesh(this.config, modelTemplate);
+    let { mesh, clips } = EnemyEntity.createMesh(this.config, modelTemplate);
     this.replaceVisualMesh(mesh);
     this.setupAnimations(clips);
     this.syncVisuals();
@@ -191,11 +191,11 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   clearVisualChildren() {
-    const preserved = this.healthBarGroup
+    let preserved = this.healthBarGroup
       ? new Set([this.healthBarGroup])
       : new Set();
-    const children = [...this.mesh.children];
-    for (const child of children) {
+    let children = [...this.mesh.children];
+    for (let child of children) {
       if (preserved.has(child)) {
         continue;
       }
@@ -267,8 +267,8 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   canSeePlayer() {
-    const player = this.world.player;
-    const distance = this.position.distanceTo(player.position);
+    let player = this.world.player;
+    let distance = this.position.distanceTo(player.position);
     if (distance > this.config.detectionRange) {
       return false;
     }
@@ -310,7 +310,7 @@ export class EnemyEntity extends DynamicEntity {
     this.healthBarGroup.position.set(0, this.height * 0.95, 0);
     this.healthBarGroup.rotation.x = -Math.PI / 2;
 
-    const background = new THREE.Mesh(
+    let background = new THREE.Mesh(
       new THREE.PlaneGeometry(HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT),
       new THREE.MeshBasicMaterial({
         color: "#200909",
@@ -321,7 +321,7 @@ export class EnemyEntity extends DynamicEntity {
       })
     );
 
-    const fill = new THREE.Mesh(
+    let fill = new THREE.Mesh(
       new THREE.PlaneGeometry(
         HEALTH_BAR_WIDTH - 0.04,
         HEALTH_BAR_HEIGHT - 0.04
@@ -349,7 +349,7 @@ export class EnemyEntity extends DynamicEntity {
       return;
     }
 
-    const ratio = THREE.MathUtils.clamp(this.health / this.maxHealth, 0, 1);
+    let ratio = THREE.MathUtils.clamp(this.health / this.maxHealth, 0, 1);
     this.healthBarFill.scale.x = ratio;
     this.healthBarFill.position.x =
       -((1 - ratio) * (HEALTH_BAR_WIDTH - 0.04)) / 2;
@@ -389,7 +389,7 @@ export class EnemyEntity extends DynamicEntity {
       return;
     }
 
-    const direction = this.world.player.position
+    let direction = this.world.player.position
       .clone()
       .sub(this.position)
       .setY(0);
@@ -414,12 +414,12 @@ export class EnemyEntity extends DynamicEntity {
   }
 
   fireAtProtectObjective() {
-    const protectEntity = this.world.protectEntity;
+    let protectEntity = this.world.protectEntity;
     if (this.cooldown > 0 || !protectEntity) {
       return;
     }
 
-    const direction = protectEntity.position.clone().sub(this.position).setY(0);
+    let direction = protectEntity.position.clone().sub(this.position).setY(0);
     if (direction.lengthSq() === 0) {
       return;
     }

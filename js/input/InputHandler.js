@@ -90,7 +90,7 @@ export class InputHandler {
   }
 
   consumeRestart() {
-    const requested = this.restartRequested;
+    let requested = this.restartRequested;
     this.restartRequested = false;
     return requested;
   }

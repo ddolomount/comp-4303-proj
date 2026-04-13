@@ -31,7 +31,7 @@ export class AttackPlayerState extends State {
 
       // Follow player, flock with nearby enemies, and avoid collisions
       let steer = new THREE.Vector3();
-      const arriveForce = SteeringBehaviours.arrive(
+      let arriveForce = SteeringBehaviours.arrive(
         entity,
         player,
         contactRange + 0.55,

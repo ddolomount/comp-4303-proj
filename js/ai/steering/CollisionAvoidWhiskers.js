@@ -46,7 +46,7 @@ export class CollisionAvoidWhiskers {
     ];
 
     // Choose force for each ray based on closest obstacle
-    for (const ray of rays) {
+    for (let ray of rays) {
       let end = start.clone().addScaledVector(ray.dir, ray.len);
 
       let hit = this.closestWallHit(start, end, map, entity.radius);
@@ -76,7 +76,7 @@ export class CollisionAvoidWhiskers {
   }
 
   static getForward(entity) {
-    const forward = entity.velocity.clone();
+    let forward = entity.velocity.clone();
     forward.y = 0;
 
     if (forward.lengthSq() < 0.0001 && entity.forward) {
@@ -108,7 +108,7 @@ export class CollisionAvoidWhiskers {
 
     // Iterate over ray in steps
     for (let i = 1; i <= steps; i += 1) {
-      const sample = start
+      let sample = start
         .clone()
         .addScaledVector(direction, (distance / steps) * i);
 
@@ -128,7 +128,7 @@ export class CollisionAvoidWhiskers {
 
   // Get data about nearest wall to entity
   static getNearestWallData(map, point, radius) {
-    const tile = map.quantize(point);
+    let tile = map.quantize(point);
     if (!tile) {
       return null;
     }

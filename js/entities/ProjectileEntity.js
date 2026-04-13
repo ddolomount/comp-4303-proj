@@ -1,11 +1,11 @@
 import * as THREE from "three";
 
-const PROJECTILE_LENGTH_MULTIPLIER = 4.6;
-const PROJECTILE_GLOW_MULTIPLIER = 0.75;
-const PROJECTILE_CORE_MULTIPLIER = 0.38;
-const PROJECTILE_FRONT_CAP_MULTIPLIER = 0.5;
-const PROJECTILE_BACK_CAP_MULTIPLIER = 0.42;
-const FORWARD_AXIS = new THREE.Vector3(0, 0, 1);
+let PROJECTILE_LENGTH_MULTIPLIER = 4.6;
+let PROJECTILE_GLOW_MULTIPLIER = 0.75;
+let PROJECTILE_CORE_MULTIPLIER = 0.38;
+let PROJECTILE_FRONT_CAP_MULTIPLIER = 0.5;
+let PROJECTILE_BACK_CAP_MULTIPLIER = 0.42;
+let FORWARD_AXIS = new THREE.Vector3(0, 0, 1);
 
 export class ProjectileEntity {
   constructor(
@@ -21,11 +21,11 @@ export class ProjectileEntity {
     this.alive = true;
     this.direction = this.velocity.clone().normalize();
 
-    const boltLength = radius * PROJECTILE_LENGTH_MULTIPLIER;
-    const glowRadius = radius * PROJECTILE_GLOW_MULTIPLIER;
+    let boltLength = radius * PROJECTILE_LENGTH_MULTIPLIER;
+    let glowRadius = radius * PROJECTILE_GLOW_MULTIPLIER;
     this.mesh = new THREE.Group();
 
-    const glow = new THREE.Mesh(
+    let glow = new THREE.Mesh(
       new THREE.CylinderGeometry(
         glowRadius,
         glowRadius,
@@ -46,7 +46,7 @@ export class ProjectileEntity {
     glow.rotation.x = Math.PI / 2;
     this.mesh.add(glow);
 
-    const core = new THREE.Mesh(
+    let core = new THREE.Mesh(
       new THREE.CylinderGeometry(
         radius * PROJECTILE_CORE_MULTIPLIER,
         radius * PROJECTILE_CORE_MULTIPLIER,
@@ -65,7 +65,7 @@ export class ProjectileEntity {
     core.castShadow = true;
     this.mesh.add(core);
 
-    const frontCap = new THREE.Mesh(
+    let frontCap = new THREE.Mesh(
       new THREE.SphereGeometry(
         radius * PROJECTILE_FRONT_CAP_MULTIPLIER,
         12,
@@ -80,7 +80,7 @@ export class ProjectileEntity {
     frontCap.position.z = boltLength * 0.5;
     this.mesh.add(frontCap);
 
-    const backCap = new THREE.Mesh(
+    let backCap = new THREE.Mesh(
       new THREE.SphereGeometry(radius * PROJECTILE_BACK_CAP_MULTIPLIER, 10, 10),
       new THREE.MeshBasicMaterial({
         color,

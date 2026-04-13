@@ -5,12 +5,12 @@ import {
   pickDefaultAnimationClip
 } from "../loaders/ModelUtils.js";
 
-const PLAYER_HEIGHT = 1.45;
-const PLAYER_RADIUS = 0.78;
+let PLAYER_HEIGHT = 1.45;
+let PLAYER_RADIUS = 0.78;
 
 export class PlayerEntity extends Entity {
   constructor(scene, modelTemplate = null) {
-    const { mesh, clips } = PlayerEntity.createMesh(modelTemplate);
+    let { mesh, clips } = PlayerEntity.createMesh(modelTemplate);
     super({
       position: new THREE.Vector3(),
       scale: new THREE.Vector3(2, PLAYER_HEIGHT, 2),
@@ -38,9 +38,9 @@ export class PlayerEntity extends Entity {
   }
 
   static createMesh(modelTemplate) {
-    const group = new THREE.Group();
+    let group = new THREE.Group();
 
-    const { model, clips } = createModelInstance(modelTemplate, {
+    let { model, clips } = createModelInstance(modelTemplate, {
       targetHeight: PLAYER_HEIGHT,
       yaw: -Math.PI / 2
     });
@@ -49,7 +49,7 @@ export class PlayerEntity extends Entity {
       return { mesh: group, clips };
     }
 
-    const body = new THREE.Mesh(
+    let body = new THREE.Mesh(
       new THREE.CylinderGeometry(0.7, 0.9, PLAYER_HEIGHT, 20),
       new THREE.MeshStandardMaterial({
         color: "#a8fff0",
@@ -62,7 +62,7 @@ export class PlayerEntity extends Entity {
     body.castShadow = true;
     group.add(body);
 
-    const barrel = new THREE.Mesh(
+    let barrel = new THREE.Mesh(
       new THREE.BoxGeometry(0.32, 0.24, 1.35),
       new THREE.MeshStandardMaterial({
         color: "#0d1e1c",
@@ -86,7 +86,7 @@ export class PlayerEntity extends Entity {
     }
 
     this.animationMixer = new THREE.AnimationMixer(this.group);
-    for (const clip of clips) {
+    for (let clip of clips) {
       this.animationActions.set(
         clip.name,
         this.animationMixer.clipAction(clip)
@@ -105,11 +105,11 @@ export class PlayerEntity extends Entity {
       return;
     }
 
-    for (const action of this.animationActions.values()) {
+    for (let action of this.animationActions.values()) {
       action.stop();
     }
 
-    const action = this.animationActions.get(name);
+    let action = this.animationActions.get(name);
     action.reset();
     action.play();
     this.activeAnimation = name;
@@ -127,7 +127,7 @@ export class PlayerEntity extends Entity {
   }
 
   applyModelTemplate(modelTemplate) {
-    const { mesh, clips } = PlayerEntity.createMesh(modelTemplate);
+    let { mesh, clips } = PlayerEntity.createMesh(modelTemplate);
     this.replaceVisualMesh(mesh);
     this.setupAnimations(clips);
     this.syncVisuals();
@@ -142,7 +142,7 @@ export class PlayerEntity extends Entity {
 
   clearVisualChildren() {
     while (this.group.children.length > 0) {
-      const child = this.group.children[0];
+      let child = this.group.children[0];
       this.group.remove(child);
       this.disposeObject3D(child);
     }
@@ -183,13 +183,13 @@ export class PlayerEntity extends Entity {
     this.fireCooldown = Math.max(0, this.fireCooldown - dt);
     this.multiplierTimer = Math.max(0, this.multiplierTimer - dt);
 
-    const movement = input.getMovementVector().multiplyScalar(this.speed);
+    let movement = input.getMovementVector().multiplyScalar(this.speed);
     this.velocity.copy(movement);
     this.position.copy(
       world.map.moveWithCollisions(this.position, movement, this.radius, dt)
     );
 
-    const aim = input.pointerWorld.clone().sub(this.position);
+    let aim = input.pointerWorld.clone().sub(this.position);
     aim.y = 0;
     if (aim.lengthSq() > 0.0001) {
       this.aimDirection.copy(aim.normalize());
@@ -221,7 +221,7 @@ export class PlayerEntity extends Entity {
       PLAYER_HEIGHT / 2,
       this.position.z
     );
-    const yaw = Math.atan2(this.aimDirection.x, this.aimDirection.z);
+    let yaw = Math.atan2(this.aimDirection.x, this.aimDirection.z);
     this.group.rotation.y = yaw;
   }
 

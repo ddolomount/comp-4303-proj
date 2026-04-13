@@ -2,10 +2,10 @@ import * as THREE from "three";
 import { Entity } from "./Entity.js";
 import { createModelInstance } from "../loaders/ModelUtils.js";
 
-const HEALTH_BAR_WIDTH = 1.8;
-const HEALTH_BAR_HEIGHT = 0.18;
-const PROTECT_ENTITY_HEIGHT = 1.3;
-const PROTECT_ENTITY_FOOTPRINT = 2.2;
+let HEALTH_BAR_WIDTH = 1.8;
+let HEALTH_BAR_HEIGHT = 0.18;
+let PROTECT_ENTITY_HEIGHT = 1.3;
+let PROTECT_ENTITY_FOOTPRINT = 2.2;
 
 export class ProtectEntity extends Entity {
   constructor(scene, modelTemplate = null) {
@@ -28,9 +28,9 @@ export class ProtectEntity extends Entity {
   }
 
   static createMesh(modelTemplate = null) {
-    const group = new THREE.Group();
+    let group = new THREE.Group();
 
-    const { model } = createModelInstance(modelTemplate, {
+    let { model } = createModelInstance(modelTemplate, {
       targetFootprint: PROTECT_ENTITY_FOOTPRINT
     });
     if (model) {
@@ -39,7 +39,7 @@ export class ProtectEntity extends Entity {
       return group;
     }
 
-    const body = new THREE.Mesh(
+    let body = new THREE.Mesh(
       new THREE.CylinderGeometry(0.7, 0.9, PROTECT_ENTITY_HEIGHT, 20),
       new THREE.MeshStandardMaterial({
         color: "#a813ce",
@@ -71,7 +71,7 @@ export class ProtectEntity extends Entity {
   }
 
   applyModelTemplate(modelTemplate) {
-    const mesh = ProtectEntity.createMesh(modelTemplate);
+    let mesh = ProtectEntity.createMesh(modelTemplate);
     this.replaceVisualMesh(mesh);
     this.syncVisuals();
   }
@@ -84,11 +84,11 @@ export class ProtectEntity extends Entity {
   }
 
   clearVisualChildren() {
-    const preserved = this.healthBarGroup
+    let preserved = this.healthBarGroup
       ? new Set([this.healthBarGroup])
       : new Set();
-    const children = [...this.group.children];
-    for (const child of children) {
+    let children = [...this.group.children];
+    for (let child of children) {
       if (preserved.has(child)) {
         continue;
       }
@@ -107,7 +107,7 @@ export class ProtectEntity extends Entity {
     this.healthBarGroup.position.set(0, this.scale.y * 1.15, 0);
     this.healthBarGroup.rotation.x = -Math.PI / 2;
 
-    const background = new THREE.Mesh(
+    let background = new THREE.Mesh(
       new THREE.PlaneGeometry(HEALTH_BAR_WIDTH, HEALTH_BAR_HEIGHT),
       new THREE.MeshBasicMaterial({
         color: "#22081d",
@@ -118,7 +118,7 @@ export class ProtectEntity extends Entity {
       })
     );
 
-    const fill = new THREE.Mesh(
+    let fill = new THREE.Mesh(
       new THREE.PlaneGeometry(
         HEALTH_BAR_WIDTH - 0.05,
         HEALTH_BAR_HEIGHT - 0.05
@@ -146,7 +146,7 @@ export class ProtectEntity extends Entity {
       return;
     }
 
-    const ratio = THREE.MathUtils.clamp(this.health / this.maxHealth, 0, 1);
+    let ratio = THREE.MathUtils.clamp(this.health / this.maxHealth, 0, 1);
     this.healthBarFill.scale.x = ratio;
     this.healthBarFill.position.x =
       -((1 - ratio) * (HEALTH_BAR_WIDTH - 0.05)) / 2;

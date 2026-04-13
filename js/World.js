@@ -15,9 +15,9 @@ import { AStar } from "./ai/pathfinding/AStar.js";
 import { AssetLoader } from "./loaders/AssetLoader.js";
 import { WaveSetupState } from "./gameflow/states/WaveSetupState.js";
 
-const CAMERA_OFFSET = new THREE.Vector3(0, 34, 10);
-const PROTECT_SPAWN_TILE_RADIUS = 3;
-const PATH_HEURISTIC = AStar.manhattan;
+let CAMERA_OFFSET = new THREE.Vector3(0, 34, 10);
+let PROTECT_SPAWN_TILE_RADIUS = 3;
+let PATH_HEURISTIC = AStar.manhattan;
 
 export class World {
   constructor() {
@@ -98,11 +98,11 @@ export class World {
       this.player.applyModelTemplate(this.assets.player);
     }
 
-    for (const enemy of this.enemies) {
+    for (let enemy of this.enemies) {
       enemy.applyModelTemplate(this.getEnemyModel(enemy.variant));
     }
 
-    for (const pickup of this.pickups) {
+    for (let pickup of this.pickups) {
       pickup.applyModelTemplate(this.getPickupModel(pickup.type));
     }
 
@@ -113,15 +113,15 @@ export class World {
 
   // Restart game upon loss
   restart() {
-    for (const projectile of this.projectiles) {
+    for (let projectile of this.projectiles) {
       projectile.dispose(this.scene);
     }
 
-    for (const enemy of this.enemies) {
+    for (let enemy of this.enemies) {
       enemy.dispose(this.scene);
     }
 
-    for (const pickup of this.pickups) {
+    for (let pickup of this.pickups) {
       pickup.dispose(this.scene);
     }
 
@@ -159,14 +159,14 @@ export class World {
     this.player.setPosition(this.map.center.x, this.map.center.z);
     this.player.syncVisuals();
 
-    const enemyCount = 4 + this.wave * 2;
+    let enemyCount = 4 + this.wave * 2;
     for (let i = 0; i < enemyCount; i += 1) {
-      const variant =
+      let variant =
         Math.random() < Math.min(0.25 + this.wave * 0.06, 0.55)
           ? "ranged"
           : "melee";
-      const spawn = this.map.getEdgeSpawnPoint(this.player.position, 16);
-      const enemy = new EnemyEntity(
+      let spawn = this.map.getEdgeSpawnPoint(this.player.position, 16);
+      let enemy = new EnemyEntity(
         this.scene,
         this,
         variant,
@@ -226,12 +226,12 @@ export class World {
       return this.map?.center?.clone?.() ?? new THREE.Vector3();
     }
 
-    const playerTile = this.map.quantize(this.player.position);
+    let playerTile = this.map.quantize(this.player.position);
     if (!playerTile) {
       return this.map.getRandomOpenPoint(this.player.position, 0);
     }
 
-    const candidates = [];
+    let candidates = [];
     for (
       let dr = -PROTECT_SPAWN_TILE_RADIUS;
       dr <= PROTECT_SPAWN_TILE_RADIUS;
@@ -246,14 +246,14 @@ export class World {
           continue;
         }
 
-        const row = playerTile.row + dr;
-        const col = playerTile.col + dc;
+        let row = playerTile.row + dr;
+        let col = playerTile.col + dc;
         if (!this.map.isWalkable(row, col)) {
           continue;
         }
 
-        const point = this.map.localizeRowCol(row, col);
-        const minimumDistance = this.player.radius + radius + 0.4;
+        let point = this.map.localizeRowCol(row, col);
+        let minimumDistance = this.player.radius + radius + 0.4;
         if (
           point.distanceTo(this.player.position) >= minimumDistance &&
           !this.map.collidesCircle(point.x, point.z, radius)
@@ -280,9 +280,9 @@ export class World {
       this.protectEntity = null;
     }
 
-    const protectConfig = config?.protectTarget ?? {};
-    const protectEntity = new ProtectEntity(this.scene, this.getProtectModel());
-    const spawnPoint = this.getProtectSpawnPoint(protectEntity.radius);
+    let protectConfig = config?.protectTarget ?? {};
+    let protectEntity = new ProtectEntity(this.scene, this.getProtectModel());
+    let spawnPoint = this.getProtectSpawnPoint(protectEntity.radius);
 
     if (typeof protectConfig.health === "number") {
       protectEntity.maxHealth = protectConfig.health;
@@ -302,7 +302,7 @@ export class World {
       return null;
     }
 
-    const shouldRefreshPathfinder =
+    let shouldRefreshPathfinder =
       !this.pathfinder ||
       this.pathfinder.map !== this.map ||
       this.pathfinder.tileMapRenderer !== this.map.renderer;
@@ -340,11 +340,8 @@ export class World {
 
   // Spawn health packs and score multipliers
   spawnWavePickups() {
-    const healthSpot = this.map.getRandomOpenPoint(this.player.position, 10);
-    const multiplierSpot = this.map.getRandomOpenPoint(
-      this.player.position,
-      12
-    );
+    let healthSpot = this.map.getRandomOpenPoint(this.player.position, 10);
+    let multiplierSpot = this.map.getRandomOpenPoint(this.player.position, 12);
 
     this.pickups.push(
       new PickupEntity(
@@ -365,14 +362,14 @@ export class World {
   }
 
   addProjectile(config) {
-    const projectile = new ProjectileEntity(this.scene, config);
+    let projectile = new ProjectileEntity(this.scene, config);
     this.projectiles.push(projectile);
     return projectile;
   }
 
   // Update our world
   update() {
-    const dt = Math.min(this.clock.getDelta(), 0.05);
+    let dt = Math.min(this.clock.getDelta(), 0.05);
     this.input.updatePointerWorld(this.camera);
 
     if (this.gameStateMachine) {
@@ -384,13 +381,13 @@ export class World {
   }
 
   updateCamera(dt) {
-    const desired = this.player.position.clone().add(CAMERA_OFFSET);
+    let desired = this.player.position.clone().add(CAMERA_OFFSET);
     this.camera.position.copy(desired);
     this.camera.lookAt(this.player.position.x, 0, this.player.position.z);
   }
 
   resolveProjectileHits() {
-    for (const projectile of this.projectiles) {
+    for (let projectile of this.projectiles) {
       if (!projectile.alive) {
         continue;
       }
@@ -407,7 +404,7 @@ export class World {
       }
 
       if (projectile.owner === "player") {
-        for (const enemy of this.enemies) {
+        for (let enemy of this.enemies) {
           if (!enemy.alive) {
             continue;
           }
@@ -422,8 +419,7 @@ export class World {
             if (!enemy.alive) {
               this.score += enemy.scoreValue * this.player.getScoreMultiplier();
               if (Math.random() < 0.16) {
-                const pickupKind =
-                  Math.random() < 0.6 ? "health" : "multiplier";
+                let pickupKind = Math.random() < 0.6 ? "health" : "multiplier";
                 this.pickups.push(
                   new PickupEntity(
                     this.scene,
@@ -460,7 +456,7 @@ export class World {
       }
     }
 
-    for (const enemy of this.enemies) {
+    for (let enemy of this.enemies) {
       if (!enemy.alive) {
         continue;
       }
@@ -476,7 +472,7 @@ export class World {
   }
 
   resolvePickupCollection() {
-    for (const pickup of this.pickups) {
+    for (let pickup of this.pickups) {
       if (!pickup.alive) {
         continue;
       }

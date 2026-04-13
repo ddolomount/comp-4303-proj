@@ -1,12 +1,12 @@
 import * as THREE from "three";
 import { Tile } from "../maps/Tile.js";
 
-const FLOOR_Y = -0.5;
-const GRID_LINE_COLOR = "#1fffc3";
-const OBSTACLE_BASE_Y = 0.045;
-const OBSTACLE_GLOW_Y = 0.055;
-const WALL_MODEL_FOOTPRINT = 0.86;
-const WALL_MODEL_HEIGHT = 0.95;
+let FLOOR_Y = -0.5;
+let GRID_LINE_COLOR = "#1fffc3";
+let OBSTACLE_BASE_Y = 0.045;
+let OBSTACLE_GLOW_Y = 0.055;
+let WALL_MODEL_FOOTPRINT = 0.86;
+let WALL_MODEL_HEIGHT = 0.95;
 
 // Tile map renderer
 export class TileMapRenderer {
@@ -21,7 +21,7 @@ export class TileMapRenderer {
     this.obstacleCount = 0;
     for (let r = 0; r < this.map.rows; r++) {
       for (let c = 0; c < this.map.cols; c++) {
-        const tile = this.map.grid[r][c];
+        let tile = this.map.grid[r][c];
         if (!tile.isWalkable()) {
           this.obstacleCount++;
         }
@@ -48,7 +48,7 @@ export class TileMapRenderer {
   }
 
   createFloor() {
-    const floor = new THREE.Mesh(
+    let floor = new THREE.Mesh(
       new THREE.BoxGeometry(this.map.width, 1, this.map.depth),
       new THREE.MeshStandardMaterial({
         color: "#0a1a17",
@@ -64,16 +64,16 @@ export class TileMapRenderer {
   }
 
   createGridLines() {
-    const group = new THREE.Group();
-    const material = new THREE.LineBasicMaterial({
+    let group = new THREE.Group();
+    let material = new THREE.LineBasicMaterial({
       color: GRID_LINE_COLOR,
       transparent: true,
       opacity: 0.22
     });
 
     for (let c = 0; c <= this.map.cols; c++) {
-      const x = this.map.minX + c * this.map.tileSize;
-      const geometry = new THREE.BufferGeometry().setFromPoints([
+      let x = this.map.minX + c * this.map.tileSize;
+      let geometry = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(x, 0.02, this.map.minZ),
         new THREE.Vector3(x, 0.02, this.map.maxZ)
       ]);
@@ -81,8 +81,8 @@ export class TileMapRenderer {
     }
 
     for (let r = 0; r <= this.map.rows; r++) {
-      const z = this.map.minZ + r * this.map.tileSize;
-      const geometry = new THREE.BufferGeometry().setFromPoints([
+      let z = this.map.minZ + r * this.map.tileSize;
+      let geometry = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(this.map.minX, 0.02, z),
         new THREE.Vector3(this.map.maxX, 0.02, z)
       ]);
@@ -93,26 +93,26 @@ export class TileMapRenderer {
   }
 
   extractObstacleVariants(modelPack) {
-    const source = modelPack?.scene ?? modelPack;
+    let source = modelPack?.scene ?? modelPack;
     if (!source) {
       return [];
     }
 
     source.updateMatrixWorld(true);
-    const elementRoots = this.getObstacleElementRoots(source);
-    const elementGroups = this.getObstacleElementGroups(elementRoots);
-    const variants = [];
-    for (const elementGroup of elementGroups) {
-      const parts = [];
-      const variantBounds = new THREE.Box3();
+    let elementRoots = this.getObstacleElementRoots(source);
+    let elementGroups = this.getObstacleElementGroups(elementRoots);
+    let variants = [];
+    for (let elementGroup of elementGroups) {
+      let parts = [];
+      let variantBounds = new THREE.Box3();
 
-      for (const root of elementGroup) {
+      for (let root of elementGroup) {
         root.traverse((child) => {
           if (!child.isMesh || !child.geometry) {
             return;
           }
 
-          const geometry = child.geometry.clone();
+          let geometry = child.geometry.clone();
           geometry.applyMatrix4(child.matrixWorld);
           geometry.computeBoundingBox();
 
@@ -130,22 +130,22 @@ export class TileMapRenderer {
       }
 
       if (parts.length === 0 || variantBounds.isEmpty()) {
-        for (const part of parts) {
+        for (let part of parts) {
           part.geometry.dispose();
           this.disposeMaterial(part.material);
         }
         continue;
       }
 
-      const center = new THREE.Vector3();
+      let center = new THREE.Vector3();
       variantBounds.getCenter(center);
 
-      for (const part of parts) {
+      for (let part of parts) {
         part.geometry.translate(-center.x, -variantBounds.min.y, -center.z);
         part.geometry.computeBoundingBox();
       }
 
-      const size = new THREE.Vector3();
+      let size = new THREE.Vector3();
       variantBounds.getSize(size);
       variants.push({
         parts,
@@ -157,15 +157,15 @@ export class TileMapRenderer {
   }
 
   getObstacleElementRoots(source) {
-    const root =
+    let root =
       source.getObjectByName("GLTF_SceneRootNode") ??
       this.findElementRoot(source);
-    const candidates = root.children.length > 0 ? root.children : [root];
+    let candidates = root.children.length > 0 ? root.children : [root];
     return candidates.filter((child) => this.containsMesh(child));
   }
 
   getObstacleElementGroups(elementRoots) {
-    const electronicPackGroups =
+    let electronicPackGroups =
       this.getElectronicPackElementGroups(elementRoots);
     if (electronicPackGroups) {
       return electronicPackGroups;
@@ -177,8 +177,8 @@ export class TileMapRenderer {
   }
 
   getElectronicPackElementGroups(elementRoots) {
-    const firstName = elementRoots[0]?.name ?? "";
-    const lastName = elementRoots[elementRoots.length - 1]?.name ?? "";
+    let firstName = elementRoots[0]?.name ?? "";
+    let lastName = elementRoots[elementRoots.length - 1]?.name ?? "";
     if (
       elementRoots.length !== 81 ||
       !firstName.startsWith("anode") ||
@@ -224,10 +224,10 @@ export class TileMapRenderer {
   }
 
   clusterObstacleElements(elementRoots) {
-    const clusters = [];
+    let clusters = [];
 
-    for (const root of elementRoots) {
-      const bounds = new THREE.Box3().setFromObject(root);
+    for (let root of elementRoots) {
+      let bounds = new THREE.Box3().setFromObject(root);
       if (bounds.isEmpty()) {
         continue;
       }
@@ -314,17 +314,17 @@ export class TileMapRenderer {
       return null;
     }
 
-    const group = new THREE.Group();
-    const variantMatrices = new Map();
+    let group = new THREE.Group();
+    let variantMatrices = new Map();
 
     for (let r = 0; r < this.map.rows; r++) {
       for (let c = 0; c < this.map.cols; c++) {
-        const tile = this.map.grid[r][c];
+        let tile = this.map.grid[r][c];
         if (tile.isWalkable()) {
           continue;
         }
 
-        const variantIndex = this.pickVariantIndex(
+        let variantIndex = this.pickVariantIndex(
           tile,
           this.obstacleVariants.length
         );
@@ -343,10 +343,10 @@ export class TileMapRenderer {
       }
     }
 
-    for (const [variantIndex, matrices] of variantMatrices.entries()) {
-      const variant = this.obstacleVariants[variantIndex];
-      for (const part of variant.parts) {
-        const mesh = new THREE.InstancedMesh(
+    for (let [variantIndex, matrices] of variantMatrices.entries()) {
+      let variant = this.obstacleVariants[variantIndex];
+      for (let part of variant.parts) {
+        let mesh = new THREE.InstancedMesh(
           part.geometry,
           part.material,
           matrices.length
@@ -371,8 +371,8 @@ export class TileMapRenderer {
       return null;
     }
 
-    const group = new THREE.Group();
-    const baseMesh = new THREE.InstancedMesh(
+    let group = new THREE.Group();
+    let baseMesh = new THREE.InstancedMesh(
       new THREE.PlaneGeometry(1, 1),
       new THREE.MeshStandardMaterial({
         color: "#06110f",
@@ -386,7 +386,7 @@ export class TileMapRenderer {
       }),
       this.obstacleCount
     );
-    const glowMesh = new THREE.InstancedMesh(
+    let glowMesh = new THREE.InstancedMesh(
       new THREE.PlaneGeometry(1, 1),
       new THREE.MeshBasicMaterial({
         color: "#36ffd8",
@@ -397,9 +397,9 @@ export class TileMapRenderer {
       }),
       this.obstacleCount
     );
-    const baseMatrix = new THREE.Matrix4();
-    const glowMatrix = new THREE.Matrix4();
-    const rotation = new THREE.Quaternion().setFromAxisAngle(
+    let baseMatrix = new THREE.Matrix4();
+    let glowMatrix = new THREE.Matrix4();
+    let rotation = new THREE.Quaternion().setFromAxisAngle(
       new THREE.Vector3(1, 0, 0),
       -Math.PI / 2
     );
@@ -407,12 +407,12 @@ export class TileMapRenderer {
 
     for (let r = 0; r < this.map.rows; r += 1) {
       for (let c = 0; c < this.map.cols; c += 1) {
-        const tile = this.map.grid[r][c];
+        let tile = this.map.grid[r][c];
         if (tile.isWalkable()) {
           continue;
         }
 
-        const pos = this.map.localize(tile);
+        let pos = this.map.localize(tile);
         baseMatrix.compose(
           new THREE.Vector3(pos.x, OBSTACLE_BASE_Y, pos.z),
           rotation,
@@ -452,7 +452,7 @@ export class TileMapRenderer {
       return null;
     }
 
-    const mesh = new THREE.InstancedMesh(
+    let mesh = new THREE.InstancedMesh(
       new THREE.BoxGeometry(1, 1, 1),
       new THREE.MeshStandardMaterial({
         color: "#12312a",
@@ -469,7 +469,7 @@ export class TileMapRenderer {
     let index = 0;
     for (let r = 0; r < this.map.rows; r++) {
       for (let c = 0; c < this.map.cols; c++) {
-        const tile = this.map.grid[r][c];
+        let tile = this.map.grid[r][c];
         if (tile.isWalkable()) {
           continue;
         }
@@ -489,20 +489,20 @@ export class TileMapRenderer {
   }
 
   pickVariantIndex(tile, variantCount) {
-    const seed = (tile.row * 73856093) ^ (tile.col * 19349663);
+    let seed = (tile.row * 73856093) ^ (tile.col * 19349663);
     return ((seed % variantCount) + variantCount) % variantCount;
   }
 
   getModelTileTransformation(tile, variant) {
-    const pos = this.map.localize(tile);
+    let pos = this.map.localize(tile);
     pos.y = FLOOR_Y;
 
-    const rotation = new THREE.Quaternion().setFromAxisAngle(
+    let rotation = new THREE.Quaternion().setFromAxisAngle(
       new THREE.Vector3(0, 1, 0),
       this.getTileRotation(tile)
     );
-    const scale = this.getModelTileScale(tile, variant);
-    const matrix = new THREE.Matrix4();
+    let scale = this.getModelTileScale(tile, variant);
+    let matrix = new THREE.Matrix4();
     matrix.compose(pos, rotation, new THREE.Vector3(scale, scale, scale));
     return matrix;
   }
@@ -512,19 +512,18 @@ export class TileMapRenderer {
   }
 
   getModelTileScale(tile, variant) {
-    const footprint = Math.max(variant.size.x, variant.size.z, 0.0001);
-    const height = Math.max(variant.size.y, 0.0001);
-    const footprintScale =
-      (this.map.tileSize * WALL_MODEL_FOOTPRINT) / footprint;
-    const heightScale = (tile.height * WALL_MODEL_HEIGHT) / height;
+    let footprint = Math.max(variant.size.x, variant.size.z, 0.0001);
+    let height = Math.max(variant.size.y, 0.0001);
+    let footprintScale = (this.map.tileSize * WALL_MODEL_FOOTPRINT) / footprint;
+    let heightScale = (tile.height * WALL_MODEL_HEIGHT) / height;
     return Math.min(footprintScale, heightScale);
   }
 
   getTileTransformation(tile) {
-    const pos = this.map.localize(tile);
+    let pos = this.map.localize(tile);
     pos.y = tile.height / 2 + FLOOR_Y;
 
-    const matrix = new THREE.Matrix4();
+    let matrix = new THREE.Matrix4();
     matrix.makeScale(this.map.tileSize, tile.height, this.map.tileSize);
     matrix.setPosition(pos);
     return matrix;
@@ -549,7 +548,7 @@ export class TileMapRenderer {
     let index = 0;
     for (let r = 0; r < this.map.rows; r++) {
       for (let c = 0; c < this.map.cols; c++) {
-        const current = this.map.grid[r][c];
+        let current = this.map.grid[r][c];
         if (current.isWalkable()) {
           continue;
         }

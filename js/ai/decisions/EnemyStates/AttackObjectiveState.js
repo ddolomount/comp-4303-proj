@@ -5,7 +5,7 @@ import { SteeringBehaviours } from "../../steering/SteeringBehaviours.js";
 import { GroupSteeringBehaviours } from "../../steering/GroupSteeringBehaviours.js";
 import { CollisionAvoidWhiskers } from "../../steering/CollisionAvoidWhiskers.js";
 
-const WAYPOINT_REACHED_DISTANCE = 0.8;
+let WAYPOINT_REACHED_DISTANCE = 0.8;
 
 export class AttackObjectiveState extends State {
   enter(entity) {
@@ -35,7 +35,7 @@ export class AttackObjectiveState extends State {
       protectEntity.position
     );
     let contactRange = protectEntity.radius + entity.radius + 0.35;
-  
+
     // Check if ranged enemy has line of sight and within range
     let rangedCanAttack =
       entity.variant === "ranged" &&

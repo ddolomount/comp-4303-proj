@@ -34,7 +34,7 @@ export class WaveSetupState extends State {
 
     // Update hud based on wave type
     if (world.hud) {
-      const label =
+      let label =
         world.currentWaveConfig.type === "protect"
           ? `Protect Wave ${world.wave}`
           : `Wave ${world.wave}`;

@@ -4,8 +4,8 @@ import { LevelMap } from "./LevelMap.js";
 import { CaveGenerator } from "../pcg/CaveGenerator.js";
 import { TileMapRenderer } from "../renderers/TileMapRenderer.js";
 
-const CA_ITERATIONS = 20;
-const CA_DENSITY = 0.45;
+let CA_ITERATIONS = 20;
+let CA_DENSITY = 0.45;
 
 export class TileMap extends LevelMap {
   constructor(scene, { rows = 31, cols = 31, tileSize = 3 } = {}) {
@@ -29,8 +29,8 @@ export class TileMap extends LevelMap {
     this.generateGrid();
     this.walkableTiles = this.grid.flat().filter((tile) => tile.isWalkable());
 
-    const spawnTile = this.findCentralWalkableTile();
-    const spawnPoint = this.localize(spawnTile);
+    let spawnTile = this.findCentralWalkableTile();
+    let spawnPoint = this.localize(spawnTile);
     this.center.set(spawnPoint.x, 0, spawnPoint.z);
 
     if (this.renderer) {
@@ -54,7 +54,7 @@ export class TileMap extends LevelMap {
   }
 
   generateGrid() {
-    const gridCA = CaveGenerator.generate(this, CA_ITERATIONS, CA_DENSITY);
+    let gridCA = CaveGenerator.generate(this, CA_ITERATIONS, CA_DENSITY);
     this.grid = [];
 
     for (let r = 0; r < this.rows; r += 1) {
@@ -79,13 +79,13 @@ export class TileMap extends LevelMap {
       return this.grid[Math.floor(this.rows / 2)][Math.floor(this.cols / 2)];
     }
 
-    const centerRow = Math.floor(this.rows / 2);
-    const centerCol = Math.floor(this.cols / 2);
+    let centerRow = Math.floor(this.rows / 2);
+    let centerCol = Math.floor(this.cols / 2);
     let bestTile = this.walkableTiles[0];
     let bestDistance = Infinity;
 
-    for (const tile of this.walkableTiles) {
-      const distance =
+    for (let tile of this.walkableTiles) {
+      let distance =
         Math.abs(tile.row - centerRow) + Math.abs(tile.col - centerCol);
       if (distance < bestDistance) {
         bestDistance = distance;
@@ -96,22 +96,29 @@ export class TileMap extends LevelMap {
     return bestTile;
   }
 
+  // Get neighbours
+  // Updated for walls (maze)
   getNeighbours(tile) {
-    const neighbours = [];
-    const { row, col } = tile;
+    let neighbours = [];
+    let row = tile.row;
+    let col = tile.col;
 
+    // North
     if (this.isWalkable(row - 1, col) && !tile.walls.north) {
       neighbours.push(this.grid[row - 1][col]);
     }
 
+    // South
     if (this.isWalkable(row + 1, col) && !tile.walls.south) {
       neighbours.push(this.grid[row + 1][col]);
     }
 
+    // East
     if (this.isWalkable(row, col + 1) && !tile.walls.east) {
       neighbours.push(this.grid[row][col + 1]);
     }
 
+    // West
     if (this.isWalkable(row, col - 1) && !tile.walls.west) {
       neighbours.push(this.grid[row][col - 1]);
     }
@@ -119,19 +126,26 @@ export class TileMap extends LevelMap {
     return neighbours;
   }
 
+  // Get adjacent tiles
   getAdjacentTiles(tile) {
-    const neighbours = [];
-    const directions = [
+    let neighbours = [];
+
+    // we can move in 4 possible directions
+    let directions = [
       [-1, 0],
       [1, 0],
       [0, -1],
       [0, 1]
     ];
 
-    for (const [dr, dc] of directions) {
-      const row = tile.row + dr;
-      const col = tile.col + dc;
-      if (this.isWalkable(row, col)) {
+    // Iterate over the directions
+    for (let [dr, dc] of directions) {
+      let row = tile.row + dr;
+      let col = tile.col + dc;
+
+      // If the neighbouring tile is walkable
+      // and it exists, add it to our list of neighbours
+      if (this.isInGrid(row, col) && this.isWalkable(row, col)) {
         neighbours.push(this.grid[row][col]);
       }
     }
@@ -139,19 +153,24 @@ export class TileMap extends LevelMap {
     return neighbours;
   }
 
+  // Test if in the grid
   isInGrid(row, col) {
     return row >= 0 && row < this.rows && col >= 0 && col < this.cols;
   }
 
+  // Quantize
+  // Converts from Vector3 position to a tile
   quantize(position) {
-    const row = Math.floor((position.z - this.minZ) / this.tileSize);
-    const col = Math.floor((position.x - this.minX) / this.tileSize);
+    let row = Math.floor((position.z - this.minZ) / this.tileSize);
+    let col = Math.floor((position.x - this.minX) / this.tileSize);
     if (!this.isInGrid(row, col)) {
       return null;
     }
     return this.grid[row][col];
   }
 
+  // Localize
+  // Converts from a tile to a Vector3 position
   localize(tile) {
     return new THREE.Vector3(
       tile.col * this.tileSize + this.minX + this.tileSize / 2,
@@ -168,15 +187,17 @@ export class TileMap extends LevelMap {
     );
   }
 
+  // Get random walkable tile
   getRandomWalkableTile() {
     if (this.walkableTiles.length === 0) {
       return this.findCentralWalkableTile();
     }
 
-    const index = Math.floor(Math.random() * this.walkableTiles.length);
+    let index = Math.floor(Math.random() * this.walkableTiles.length);
     return this.walkableTiles[index];
   }
 
+  // Tests if node at row, col is walkable
   isWalkable(row, col) {
     return this.isInGrid(row, col) && this.grid[row][col].isWalkable();
   }
@@ -186,8 +207,8 @@ export class TileMap extends LevelMap {
   }
 
   collidesCircle(x, z, radius) {
-    const tile = this.quantize(new THREE.Vector3(x, 0, z));
-    const searchRadius = Math.ceil(radius / this.tileSize) + 1;
+    let tile = this.quantize(new THREE.Vector3(x, 0, z));
+    let searchRadius = Math.ceil(radius / this.tileSize) + 1;
 
     if (!tile) {
       return true;
@@ -195,27 +216,27 @@ export class TileMap extends LevelMap {
 
     for (let dr = -searchRadius; dr <= searchRadius; dr += 1) {
       for (let dc = -searchRadius; dc <= searchRadius; dc += 1) {
-        const row = tile.row + dr;
-        const col = tile.col + dc;
+        let row = tile.row + dr;
+        let col = tile.col + dc;
 
         if (!this.isWallTile(row, col)) {
           continue;
         }
 
-        const obstacle = this.localizeRowCol(row, col);
-        const half = this.tileSize / 2;
-        const nearestX = THREE.MathUtils.clamp(
+        let obstacle = this.localizeRowCol(row, col);
+        let half = this.tileSize / 2;
+        let nearestX = THREE.MathUtils.clamp(
           x,
           obstacle.x - half,
           obstacle.x + half
         );
-        const nearestZ = THREE.MathUtils.clamp(
+        let nearestZ = THREE.MathUtils.clamp(
           z,
           obstacle.z - half,
           obstacle.z + half
         );
-        const distX = x - nearestX;
-        const distZ = z - nearestZ;
+        let distX = x - nearestX;
+        let distZ = z - nearestZ;
 
         if (distX * distX + distZ * distZ < radius * radius) {
           return true;
@@ -227,14 +248,14 @@ export class TileMap extends LevelMap {
   }
 
   moveWithCollisions(position, velocity, radius, dt) {
-    const next = position.clone();
+    let next = position.clone();
 
-    const trialX = next.x + velocity.x * dt;
+    let trialX = next.x + velocity.x * dt;
     if (!this.collidesCircle(trialX, next.z, radius)) {
       next.x = trialX;
     }
 
-    const trialZ = next.z + velocity.z * dt;
+    let trialZ = next.z + velocity.z * dt;
     if (!this.collidesCircle(next.x, trialZ, radius)) {
       next.z = trialZ;
     }
@@ -244,8 +265,8 @@ export class TileMap extends LevelMap {
 
   getRandomOpenPoint(awayFrom, minDistance = 0) {
     for (let tries = 0; tries < 120; tries += 1) {
-      const tile = this.getRandomWalkableTile();
-      const point = this.localize(tile);
+      let tile = this.getRandomWalkableTile();
+      let point = this.localize(tile);
       if (!awayFrom || point.distanceTo(awayFrom) >= minDistance) {
         return point;
       }
@@ -255,7 +276,7 @@ export class TileMap extends LevelMap {
   }
 
   getEdgeSpawnPoint(awayFrom, minDistance = 12) {
-    const candidates = this.walkableTiles.filter(
+    let candidates = this.walkableTiles.filter(
       (tile) =>
         tile.row <= 2 ||
         tile.col <= 2 ||
@@ -268,8 +289,8 @@ export class TileMap extends LevelMap {
     }
 
     for (let tries = 0; tries < 100; tries += 1) {
-      const tile = candidates[Math.floor(Math.random() * candidates.length)];
-      const point = this.localize(tile);
+      let tile = candidates[Math.floor(Math.random() * candidates.length)];
+      let point = this.localize(tile);
       if (!awayFrom || point.distanceTo(awayFrom) >= minDistance) {
         return point;
       }
@@ -279,9 +300,9 @@ export class TileMap extends LevelMap {
   }
 
   hasLineOfSight(from, to) {
-    const direction = new THREE.Vector3().subVectors(to, from);
-    const distance = direction.length();
-    const steps = Math.ceil(distance / (this.tileSize * 0.4));
+    let direction = new THREE.Vector3().subVectors(to, from);
+    let distance = direction.length();
+    let steps = Math.ceil(distance / (this.tileSize * 0.4));
 
     if (steps <= 1) {
       return true;
@@ -289,7 +310,7 @@ export class TileMap extends LevelMap {
 
     direction.normalize();
     for (let i = 1; i < steps; i += 1) {
-      const sample = from
+      let sample = from
         .clone()
         .addScaledVector(direction, (distance / steps) * i);
       if (this.collidesCircle(sample.x, sample.z, 0.35)) {
@@ -305,23 +326,23 @@ export class TileMap extends LevelMap {
       return new THREE.Vector3();
     }
 
-    const ahead = position
+    let ahead = position
       .clone()
       .addScaledVector(direction.clone().normalize(), lookAhead);
     if (!this.collidesCircle(ahead.x, ahead.z, 0.7)) {
       return new THREE.Vector3();
     }
 
-    const offsets = [
+    let offsets = [
       new THREE.Vector3(1, 0, 0),
       new THREE.Vector3(-1, 0, 0),
       new THREE.Vector3(0, 0, 1),
       new THREE.Vector3(0, 0, -1)
     ];
 
-    const push = new THREE.Vector3();
-    for (const offset of offsets) {
-      const probe = ahead.clone().addScaledVector(offset, this.tileSize);
+    let push = new THREE.Vector3();
+    for (let offset of offsets) {
+      let probe = ahead.clone().addScaledVector(offset, this.tileSize);
       if (!this.collidesCircle(probe.x, probe.z, 0.4)) {
         push.add(offset);
       }

@@ -1,6 +1,6 @@
 import { World } from "./World.js";
 
-const world = new World();
+let world = new World();
 world.init();
 
 // Animate loop

@@ -9,9 +9,9 @@ export function createModelInstance(
     return { model: null, clips: [] };
   }
 
-  const source = template.scene ?? template;
-  const clips = template.animations ?? [];
-  const instance = clone(source);
+  let source = template.scene ?? template;
+  let clips = template.animations ?? [];
+  let instance = clone(source);
   instance.rotation.y = yaw;
 
   instance.traverse((child) => {
@@ -21,26 +21,26 @@ export function createModelInstance(
     }
   });
 
-  const initialBounds = new THREE.Box3().setFromObject(instance);
+  let initialBounds = new THREE.Box3().setFromObject(instance);
   if (!initialBounds.isEmpty()) {
-    const size = new THREE.Vector3();
+    let size = new THREE.Vector3();
     initialBounds.getSize(size);
 
-    const footprint = Math.max(size.x, size.z);
+    let footprint = Math.max(size.x, size.z);
     if (targetFootprint && footprint > 0.0001) {
-      const scale = targetFootprint / footprint;
+      let scale = targetFootprint / footprint;
       instance.scale.multiplyScalar(scale);
     } else if (size.y > 0.0001) {
-      const scale = targetHeight / size.y;
+      let scale = targetHeight / size.y;
       instance.scale.multiplyScalar(scale);
     }
   }
 
   instance.updateMatrixWorld(true);
 
-  const fittedBounds = new THREE.Box3().setFromObject(instance);
+  let fittedBounds = new THREE.Box3().setFromObject(instance);
   if (!fittedBounds.isEmpty()) {
-    const center = new THREE.Vector3();
+    let center = new THREE.Vector3();
     fittedBounds.getCenter(center);
     instance.position.x -= center.x;
     instance.position.z -= center.z;
@@ -59,7 +59,7 @@ export function pickDefaultAnimationClip(clips) {
     return null;
   }
 
-  const preferredPatterns = [
+  let preferredPatterns = [
     /idle/i,
     /hover/i,
     /fly/i,
@@ -68,8 +68,8 @@ export function pickDefaultAnimationClip(clips) {
     /animation/i
   ];
 
-  for (const pattern of preferredPatterns) {
-    const match = clips.find((clip) => pattern.test(clip.name));
+  for (let pattern of preferredPatterns) {
+    let match = clips.find((clip) => pattern.test(clip.name));
     if (match) {
       return match;
     }

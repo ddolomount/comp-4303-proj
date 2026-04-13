@@ -25,7 +25,7 @@ export class AssetLoader {
   }
 
   async loadAll() {
-    const assets = {};
+    let assets = {};
     assets.player = await this.load("/public/rodot_5000_-_flying_robot.glb");
     assets.meleeEnemy = await this.load("/public/chopper_robot_low_poly.glb");
     assets.rangedEnemy = await this.load("/public/dalek.glb");
