@@ -4,6 +4,8 @@ export class AssetLoader {
   constructor() {
     this.loader = new GLTFLoader();
     this.cache = new Map();
+    this.assets = {};
+    this.loadPromise = null;
   }
 
   load(path) {
@@ -36,5 +38,70 @@ export class AssetLoader {
     );
     assets.protectEntity = await this.load("/public/intel_cpu.glb");
     return assets;
+  }
+
+  loadAssetsInBackground(world) {
+    if (this.loadPromise) {
+      return this.loadPromise;
+    }
+
+    this.loadPromise = this.loadAll()
+      .then((assets) => {
+        this.assets = assets;
+        this.applyLoadedAssets(world);
+        return assets;
+      })
+      .catch((error) => {
+        console.error(
+          "Failed to load GLB assets, using fallback meshes instead.",
+          error
+        );
+        this.assets = {};
+        return {};
+      });
+
+    return this.loadPromise;
+  }
+
+  applyLoadedAssets(world) {
+    if (world.map) {
+      world.map.setObstacleModelPack(this.assets.wallElements);
+    }
+
+    if (world.player) {
+      world.player.applyModelTemplate(this.getPlayerModel());
+    }
+
+    for (let enemy of world.enemies) {
+      enemy.applyModelTemplate(this.getEnemyModel(enemy.variant));
+    }
+
+    for (let pickup of world.pickups) {
+      pickup.applyModelTemplate(this.getPickupModel(pickup.type));
+    }
+
+    if (world.protectEntity) {
+      world.protectEntity.applyModelTemplate(this.getProtectModel());
+    }
+  }
+
+  getPlayerModel() {
+    return this.assets?.player;
+  }
+
+  getEnemyModel(variant) {
+    return variant === "melee"
+      ? this.assets?.meleeEnemy
+      : this.assets?.rangedEnemy;
+  }
+
+  getPickupModel(type) {
+    return type === "health"
+      ? this.assets?.healthPickup
+      : this.assets?.multiplierPickup;
+  }
+
+  getProtectModel() {
+    return this.assets?.protectEntity;
   }
 }

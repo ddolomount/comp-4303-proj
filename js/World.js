@@ -36,8 +36,6 @@ export class World {
     this.currentWaveConfig = null;
     this.pathfinder = null;
     this.assetLoader = new AssetLoader();
-    this.assets = {};
-    this.assetLoadPromise = null;
 
     this.projectiles = [];
     this.enemies = [];
@@ -58,57 +56,14 @@ export class World {
     Setup.createLights(this.scene);
 
     this.map = new TileMap(this.scene, { rows: 31, cols: 31, tileSize: 3 });
-    this.player = new PlayerEntity(this.scene, this.assets.player);
+    this.player = new PlayerEntity(
+      this.scene,
+      this.assetLoader.getPlayerModel()
+    );
     this.player.setPosition(this.map.center.x, this.map.center.z);
     this.gameStateMachine = new StateMachine(this, new WaveSetupState());
     this.gameStateMachine.state.enter(this);
-    this.loadAssetsInBackground();
-  }
-
-  loadAssetsInBackground() {
-    if (this.assetLoadPromise) {
-      return this.assetLoadPromise;
-    }
-
-    this.assetLoadPromise = this.assetLoader
-      .loadAll()
-      .then((assets) => {
-        this.assets = assets;
-        this.applyLoadedAssets();
-        return assets;
-      })
-      .catch((error) => {
-        console.error(
-          "Failed to load GLB assets, using fallback meshes instead.",
-          error
-        );
-        this.assets = {};
-        return {};
-      });
-
-    return this.assetLoadPromise;
-  }
-
-  applyLoadedAssets() {
-    if (this.map) {
-      this.map.setObstacleModelPack(this.assets.wallElements);
-    }
-
-    if (this.player) {
-      this.player.applyModelTemplate(this.assets.player);
-    }
-
-    for (let enemy of this.enemies) {
-      enemy.applyModelTemplate(this.getEnemyModel(enemy.variant));
-    }
-
-    for (let pickup of this.pickups) {
-      pickup.applyModelTemplate(this.getPickupModel(pickup.type));
-    }
-
-    if (this.protectEntity) {
-      this.protectEntity.applyModelTemplate(this.getProtectModel());
-    }
+    this.assetLoader.loadAssetsInBackground(this);
   }
 
   // Restart game upon loss
@@ -171,7 +126,7 @@ export class World {
         this,
         variant,
         this.wave,
-        this.getEnemyModel(variant)
+        this.assetLoader.getEnemyModel(variant)
       );
       enemy.setPosition(spawn.x, spawn.z);
       this.enemies.push(enemy);
@@ -198,27 +153,11 @@ export class World {
         this,
         variant,
         this.wave,
-        this.getEnemyModel(variant)
+        this.assetLoader.getEnemyModel(variant)
       );
       enemy.setPosition(spawn.x, spawn.z);
       this.enemies.push(enemy);
     }
-  }
-
-  getEnemyModel(variant) {
-    return variant === "melee"
-      ? this.assets?.meleeEnemy
-      : this.assets?.rangedEnemy;
-  }
-
-  getPickupModel(type) {
-    return type === "health"
-      ? this.assets?.healthPickup
-      : this.assets?.multiplierPickup;
-  }
-
-  getProtectModel() {
-    return this.assets?.protectEntity;
   }
 
   getProtectSpawnPoint(radius = 0.7) {
@@ -281,7 +220,10 @@ export class World {
     }
 
     let protectConfig = config?.protectTarget ?? {};
-    let protectEntity = new ProtectEntity(this.scene, this.getProtectModel());
+    let protectEntity = new ProtectEntity(
+      this.scene,
+      this.assetLoader.getProtectModel()
+    );
     let spawnPoint = this.getProtectSpawnPoint(protectEntity.radius);
 
     if (typeof protectConfig.health === "number") {
@@ -348,7 +290,7 @@ export class World {
         this.scene,
         "health",
         healthSpot,
-        this.getPickupModel("health")
+        this.assetLoader.getPickupModel("health")
       )
     );
     this.pickups.push(
@@ -356,7 +298,7 @@ export class World {
         this.scene,
         "multiplier",
         multiplierSpot,
-        this.getPickupModel("multiplier")
+        this.assetLoader.getPickupModel("multiplier")
       )
     );
   }
@@ -425,7 +367,7 @@ export class World {
                     this.scene,
                     pickupKind,
                     enemy.position,
-                    this.getPickupModel(pickupKind)
+                    this.assetLoader.getPickupModel(pickupKind)
                   )
                 );
               }
