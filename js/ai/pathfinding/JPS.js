@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { MinHeap } from "./util/MinHeap.js";
 import { Pathfinder } from "./Pathfinder.js";
+import { AStar } from "./AStar.js";
 
 export class JPS extends Pathfinder {
   constructor(map, heuristic, tileMapRenderer) {
@@ -10,9 +11,13 @@ export class JPS extends Pathfinder {
     this.tileMapRenderer = tileMapRenderer;
   }
 
-  // Original version of ASTAR
-  // That we will modify for JPS
-  findPath(start, goal) {
+  findPath(start, goal, map) {
+    if (!map) {
+      return [];
+    }
+
+    this.map = map;
+
     let open = new MinHeap();
     let costs = new Map();
     let parents = new Map();
@@ -20,7 +25,7 @@ export class JPS extends Pathfinder {
     costs.set(start, 0);
     parents.set(start, null);
 
-    open.enqueue(start, this.heuristic(start, goal, 1));
+    open.enqueue(start, this.heuristic(start, goal, this.map.tileSize));
 
     while (!open.isEmpty()) {
       let current = open.dequeue();
@@ -35,13 +40,14 @@ export class JPS extends Pathfinder {
         // Since we are skipping over nodes, we must consider the
         // distance between the current and the neighbour
         let newCost =
-          costs.get(current) + this.heuristic(current, neighbour, 1);
+          costs.get(current) +
+          this.heuristic(current, neighbour, this.map.tileSize);
 
         if (!costs.has(neighbour) || newCost < costs.get(neighbour)) {
           costs.set(neighbour, newCost);
           parents.set(neighbour, current);
 
-          let f = newCost + this.heuristic(neighbour, goal, 1);
+          let f = newCost + this.heuristic(neighbour, goal, this.map.tileSize);
           open.enqueue(neighbour, f);
         }
       }

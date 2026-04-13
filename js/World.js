@@ -11,13 +11,13 @@ import { ProtectEntity } from "./entities/ProtectEntity.js";
 import { WaveDirector } from "./gameflow/WaveDirector.js";
 import { StateMachine } from "./ai/decisions/StateMachine.js";
 import { JPS } from "./ai/pathfinding/JPS.js";
+import { AStar } from "./ai/pathfinding/AStar.js";
 import { AssetLoader } from "./loaders/AssetLoader.js";
 import { WaveSetupState } from "./gameflow/states/WaveSetupState.js";
 
 const CAMERA_OFFSET = new THREE.Vector3(0, 34, 10);
 const PROTECT_SPAWN_TILE_RADIUS = 3;
-const PATH_HEURISTIC = (a, b, weight = 1) =>
-  (Math.abs(a.row - b.row) + Math.abs(a.col - b.col)) * weight;
+const PATH_HEURISTIC = AStar.manhattan;
 
 export class World {
   constructor() {
@@ -47,7 +47,6 @@ export class World {
     this.score = 0;
     this.wave = 0;
     this.pendingWaveTimer = 0;
-    this.protectTimer = 0;
     this.gameOver = false;
     this.arenaRegenerated = false;
 
@@ -137,7 +136,6 @@ export class World {
     this.score = 0;
     this.wave = 0;
     this.pendingWaveTimer = 0;
-    this.protectTimer = 0;
     this.currentWaveConfig = null;
     this.gameOver = false;
     this.arenaRegenerated = false;
@@ -304,11 +302,12 @@ export class World {
       return null;
     }
 
-    if (
+    const shouldRefreshPathfinder =
       !this.pathfinder ||
       this.pathfinder.map !== this.map ||
-      this.pathfinder.tileMapRenderer !== this.map.renderer
-    ) {
+      this.pathfinder.tileMapRenderer !== this.map.renderer;
+
+    if (shouldRefreshPathfinder) {
       this.pathfinder = new JPS(this.map, PATH_HEURISTIC, this.map.renderer);
     }
 
@@ -382,23 +381,6 @@ export class World {
 
     this.updateCamera(dt);
     this.updateHud(dt);
-  }
-
-  updateWaveFlow(dt) {
-    if (this.enemies.length > 0) {
-      return;
-    }
-
-    this.pendingWaveTimer += dt;
-
-    if (!this.arenaRegenerated && this.pendingWaveTimer > 1.2) {
-      this.hud.setMessage("Map rerouting");
-      this.arenaRegenerated = true;
-    }
-
-    if (this.pendingWaveTimer > 2.4) {
-      this.startWave();
-    }
   }
 
   updateCamera(dt) {

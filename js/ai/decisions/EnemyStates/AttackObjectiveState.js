@@ -25,34 +25,40 @@ export class AttackObjectiveState extends State {
       return;
     }
 
-    
+    // Timer for rebuilding path
     entity.protectRepathTimer = Math.max(
       0,
       (entity.protectRepathTimer ?? 0) - dt
     );
-    const distanceToObjective = entity.position.distanceTo(
+
+    let distanceToObjective = entity.position.distanceTo(
       protectEntity.position
     );
-    const contactRange = protectEntity.radius + entity.radius + 0.35;
-    const rangedCanAttack =
+    let contactRange = protectEntity.radius + entity.radius + 0.35;
+  
+    // Check if ranged enemy has line of sight and within range
+    let rangedCanAttack =
       entity.variant === "ranged" &&
       distanceToObjective <= entity.attackRange &&
       entity.world.map.hasLineOfSight(entity.position, protectEntity.position);
 
+    // Attack objective and slow down if range enemy is able
     if (rangedCanAttack) {
       entity.velocity.multiplyScalar(0.65);
       entity.fireAtProtectObjective();
       return;
     }
 
+    // Attack objective and slow down if melee enemy is able
     if (entity.variant !== "ranged" && distanceToObjective <= contactRange) {
       entity.velocity.multiplyScalar(0.35);
       entity.touchProtectObjective();
       return;
     }
 
-    const goalTile = entity.world.map.quantize(protectEntity.position);
-    const goalKey = goalTile ? `${goalTile.row}:${goalTile.col}` : null;
+    // Rebuild path if timer expires or path does not exist
+    let goalTile = entity.world.map.quantize(protectEntity.position);
+    let goalKey = goalTile ? `${goalTile.row}:${goalTile.col}` : null; // TODO: Check this
     if (
       entity.protectRepathTimer === 0 ||
       !entity.protectPath?.length ||
@@ -61,14 +67,16 @@ export class AttackObjectiveState extends State {
       this.rebuildPath(entity);
     }
 
-    const waypoint = this.getCurrentWaypoint(entity);
-    const finalStandOff =
+    // Determine how close enemy needs to get to objective
+    let waypoint = this.getCurrentWaypoint(entity);
+    let finalStandOff =
       entity.variant === "ranged" && distanceToObjective > entity.attackRange
         ? Math.max(contactRange, entity.attackRange * 0.85)
         : contactRange + 0.4;
-    const isAtObjective = distanceToObjective <= finalStandOff;
-    const steer = new THREE.Vector3();
+    let isAtObjective = distanceToObjective <= finalStandOff;
+    let steer = new THREE.Vector3();
 
+    // Arrive at objective if no more waypoints
     if (!waypoint || isAtObjective) {
       steer.add(
         SteeringBehaviours.arrive(
@@ -79,11 +87,12 @@ export class AttackObjectiveState extends State {
         ).multiplyScalar(1.25)
       );
     } else {
-      const isFinalWaypoint =
+      // Follow path waypoint-by-waypoint
+      let isFinalWaypoint =
         entity.protectPathIndex >= entity.protectPath.length - 1;
-      const targetPoint = isFinalWaypoint ? protectEntity.position : waypoint;
-      const targetRadius = isFinalWaypoint ? finalStandOff + 1.8 : 1.35;
-      const stopRadius = isFinalWaypoint ? finalStandOff : 0.2;
+      let targetPoint = isFinalWaypoint ? protectEntity.position : waypoint;
+      let targetRadius = isFinalWaypoint ? finalStandOff + 1.8 : 1.35;
+      let stopRadius = isFinalWaypoint ? finalStandOff : 0.2;
       steer.add(
         SteeringBehaviours.arrive(
           entity,
@@ -94,6 +103,7 @@ export class AttackObjectiveState extends State {
       );
     }
 
+    // Flock with other enemys and avoid collisions
     steer.add(
       GroupSteeringBehaviours.flock(
         entity,
@@ -129,9 +139,10 @@ export class AttackObjectiveState extends State {
     entity.protectRepathTimer = 0;
   }
 
+  // Check reached waypoints and return next waypoint
   getCurrentWaypoint(entity) {
     while (entity.protectPathIndex < entity.protectPath.length) {
-      const waypoint = entity.protectPath[entity.protectPathIndex];
+      let waypoint = entity.protectPath[entity.protectPathIndex];
       if (entity.position.distanceTo(waypoint) <= WAYPOINT_REACHED_DISTANCE) {
         entity.protectPathIndex += 1;
         continue;
@@ -143,9 +154,10 @@ export class AttackObjectiveState extends State {
     return null;
   }
 
+  // Compute new path to objective
   rebuildPath(entity) {
-    const protectEntity = entity.world.protectEntity;
-    const pathfinder = entity.world.getPathfinder();
+    let protectEntity = entity.world.protectEntity;
+    let pathfinder = entity.world.getPathfinder();
     if (!protectEntity || !pathfinder) {
       entity.protectPath = [];
       entity.protectPathIndex = 0;
@@ -154,8 +166,9 @@ export class AttackObjectiveState extends State {
       return;
     }
 
-    const startTile = entity.world.map.quantize(entity.position);
-    const goalTile = entity.world.map.quantize(protectEntity.position);
+    // Quantize start and goal tiles
+    let startTile = entity.world.map.quantize(entity.position);
+    let goalTile = entity.world.map.quantize(protectEntity.position);
     if (!startTile || !goalTile) {
       entity.protectPath = [];
       entity.protectPathIndex = 0;
@@ -164,7 +177,8 @@ export class AttackObjectiveState extends State {
       return;
     }
 
-    const path = pathfinder.findPath(startTile, goalTile);
+    // Find path and convert to world space
+    let path = pathfinder.findPath(startTile, goalTile);
     entity.protectPath = path
       .slice(1)
       .map((tile) => entity.world.map.localize(tile));

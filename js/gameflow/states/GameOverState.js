@@ -8,10 +8,12 @@ export class GameOverState extends State {
 
   enter(world) {
     world.gameOver = true;
+    // Update hud
     world.hud.setMessage(this.message, true);
   }
 
   update(world, dt) {
+    // Restart based on user input
     if (world.input.consumeRestart()) {
       world.restart();
     }

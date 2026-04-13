@@ -11,6 +11,7 @@ export class IntermissionState extends State {
   update(world, dt) {
     world.pendingWaveTimer += dt;
 
+    // Update hud
     if (!world.arenaRegenerated && world.pendingWaveTimer > 1.2) {
       world.hud.setMessage("Map rerouting");
       world.arenaRegenerated = true;

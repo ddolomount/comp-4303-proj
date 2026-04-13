@@ -4,17 +4,23 @@ import { ProtectState } from "./ProtectState.js";
 
 export class WaveSetupState extends State {
   enter(world) {
+    // Increment wave count
     world.wave += 1;
+
     world.pendingWaveTimer = 0;
     world.arenaRegenerated = false;
+
+    // Get new wave config based on current wave
     world.currentWaveConfig = world.waveDirector.getWaveConfig(world.wave);
 
     world.clearTransientObjects();
 
+    // Generate a new arena
     if (world.map) {
       world.map.generate();
     }
 
+    // Set player spawn in the middle of the arena
     if (world.player && world.map) {
       world.player.setPosition(world.map.center.x, world.map.center.z);
       if (typeof world.player.syncVisuals === "function") {
@@ -26,6 +32,7 @@ export class WaveSetupState extends State {
 
     world.spawnWavePickups();
 
+    // Update hud based on wave type
     if (world.hud) {
       const label =
         world.currentWaveConfig.type === "protect"
@@ -34,6 +41,7 @@ export class WaveSetupState extends State {
       world.hud.setMessage(label);
     }
 
+    // Go to new state based on wave type
     if (world.gameStateMachine) {
       if (world.currentWaveConfig.type === "protect") {
         world.gameStateMachine.change(new ProtectState());
