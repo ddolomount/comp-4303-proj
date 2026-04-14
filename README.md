@@ -84,3 +84,6 @@ The following external 3D assets were used from Sketchfab:
 | Set of Electronic Elements Pack | bazylevnik0 | https://sketchfab.com/3d-models/set-of-electronic-elements-pack-8f3020ea3aeb4067aed2cfd2c771b9e6 | CC BY 4.0 | Used for PCB obstacle models |
 | Intel CPU | Mr_Assembly0 | https://sketchfab.com/3d-models/intel-cpu-b13e35727e404b2b9fd3ea64c083ff2e | CC BY 4.0 | Used for protect objective |
 
+## Contribution Document
+
+A .md file describing each group members contributions can be found in `contribution.md`.
